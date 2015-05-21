@@ -29,9 +29,46 @@ namespace CodeFull.Graphics
         private Vector3d[] vertices;
 
         /// <summary>
+        /// Gets the array of vertices of this mesh
+        /// </summary>
+        public Vector3d[] Vertices 
+        {
+            get { return this.vertices; }
+        }
+
+        /// <summary>
+        /// Calculates the array of vertices of this mesh after applying
+        /// the transforms applied to this mesh.
+        /// </summary>
+        /// <returns>The transformed vertices of this mesh</returns>
+        public Vector3d[] GetTransformedVertices()
+        {
+            Vector3d[] result = new Vector3d[this.vertices.Length];
+
+            Matrix4d transform = this.translation * this.rotation * this.scale;
+
+            // Transform all vertices in parallel
+            Parallel.For(0, this.vertices.Length, i => {
+                // Apply the transformations
+                Vector3d transformed = Vector3d.Transform(this.vertices[i], transform);
+                result[i] = transformed;
+            });
+
+            return result;
+        }
+
+        /// <summary>
         /// The color array of this mesh
         /// </summary>
         private uint[] colors;
+
+        /// <summary>
+        /// Gets the array of colors of this mesh
+        /// </summary>
+        public uint[] Colors
+        {
+            get { return this.colors; }
+        }
 
         /// <summary>
         /// The ID of each triangle in terms of colors (hack for picking)
@@ -47,6 +84,14 @@ namespace CodeFull.Graphics
         /// The triangle indices of this mesh
         /// </summary>
         private int[] triangleIndices;
+
+        /// <summary>
+        /// Gets the array of triangle indices of this mesh
+        /// </summary>
+        public int[] TriangleIndices 
+        {
+            get { return this.triangleIndices; }
+        }
 
         /// <summary>
         /// The OpenGL handles
@@ -76,15 +121,8 @@ namespace CodeFull.Graphics
         /// </summary>
         public Matrix4d Translation
         {
-            get
-            {
-                return this.translation;
-            }
-
-            set
-            {
-                this.translation = value;
-            }
+            get { return this.translation; }
+            set { this.translation = value; }
         }
 
         /// <summary>
@@ -95,22 +133,16 @@ namespace CodeFull.Graphics
         /// <summary>
         /// The rotation applied to this mesh
         /// </summary>
-        public Matrix4d rotation = Matrix4d.Identity;
+        private Matrix4d rotation = Matrix4d.Identity;
 
         /// <summary>
         /// Gets or sets the rotation matrix applied to this mesh
         /// </summary>
         public Matrix4d Rotation
         {
-            get
-            {
-                return this.rotation;
-            }
+            get { return this.rotation; }
 
-            set
-            {
-                this.rotation = value;
-            }
+            set{ this.rotation = value; }
         }
 
         /// <summary>
@@ -123,17 +155,15 @@ namespace CodeFull.Graphics
         /// </summary>
         public Matrix4d Scale
         {
-            get
-            {
-                return this.scale;
-            }
+            get { return this.scale; }
 
-            set
-            {
-                this.scale = value;
-            }
+            set { this.scale = value; }
         }
 
+        /// <summary>
+        /// Set an arbitrary transform for this mesh in the form of a Matrix4d
+        /// </summary>
+        /// <param name="transform">The transform to set</param>
         public void SetTransform(Matrix4d transform)
         {
             this.translation = Matrix4d.CreateTranslation(transform.ExtractTranslation());
@@ -141,6 +171,11 @@ namespace CodeFull.Graphics
             this.scale = Matrix4d.Scale(transform.ExtractScale());
         }
 
+        /// <summary>
+        /// Relatively transform this mesh by the specified transformation
+        /// matrix
+        /// </summary>
+        /// <param name="transform">The transform to apply</param>
         public void TransformBy(Matrix4d transform)
         {
             this.translation *= Matrix4d.CreateTranslation(transform.ExtractTranslation());
@@ -162,9 +197,9 @@ namespace CodeFull.Graphics
         /// <summary>
         /// Sets the rotation of this mesh to the specified angles
         /// </summary>
-        /// <param name="x">The X angle</param>
-        /// <param name="y">The Y angle</param>
-        /// <param name="z">The Z angle</param>
+        /// <param name="angleX">The X angle</param>
+        /// <param name="angleY">The Y angle</param>
+        /// <param name="angleZ">The Z angle</param>
         public void SetRotation(double angleX, double angleY, double angleZ)
         {
             Matrix4d rotX = Matrix4d.CreateRotationX(angleX);
@@ -177,9 +212,9 @@ namespace CodeFull.Graphics
         /// <summary>
         /// Sets the scale of this mesh to the specified amounts
         /// </summary>
-        /// <param name="x">The X scale</param>
-        /// <param name="y">The Y scale</param>
-        /// <param name="z">The Z scale</param>
+        /// <param name="scaleX">The X scale</param>
+        /// <param name="scaleY">The Y scale</param>
+        /// <param name="scaleZ">The Z scale</param>
         public void SetScale(double scaleX, double scaleY, double scaleZ)
         {
             this.scale = Matrix4d.Scale(scaleX, scaleY, scaleZ);
@@ -226,11 +261,20 @@ namespace CodeFull.Graphics
         /// <param name="vertices">The vertex coordinates of this mesh</param>
         /// <param name="triangleIndices">The face triangle indices of this mesh</param>
         /// <param name="colors">Vertex colors of this mesh</param>
-        public Mesh(Vector3d[] vertices, int[] triangleIndices, uint[] colors)
+        public Mesh(Vector3d[] vertices, int[] triangleIndices, uint[] colors = null)
         {
             this.vertices = vertices;
-            this.colors = colors;
             this.triangleIndices = triangleIndices;
+
+            if (colors != null)
+                this.colors = colors;
+            else // If no color array is specified, fill it with gray!
+            {
+                this.colors = new uint[vertices.Length];
+                Color color = Color.Gray;
+                for (int i = 0; i < this.colors.Length; i++)
+                    this.colors[i] = (uint)color.A << 24 | (uint)color.B << 16 | (uint)color.G << 8 | (uint)color.R;
+            }
 
             // Fill in color codes for selection;
             this.selectColors = new uint[vertices.Length];

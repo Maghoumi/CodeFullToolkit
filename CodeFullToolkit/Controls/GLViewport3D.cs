@@ -406,8 +406,9 @@ namespace CodeFull.Controls
         /// Instantiates a new Arcball with the specified boundaries
         /// for the width and height
         /// </summary>
-        /// <param name="width"></param>
-        /// <param name="height"></param>
+        /// <param name="width">The width</param>
+        /// <param name="height">The height</param>
+        /// <param name="sensitivity">The sensitivity of the trackball</param>
         public Arcball(int width, int height, double sensitivity = 0.01)
         {
             this.Sensitivity = sensitivity;
