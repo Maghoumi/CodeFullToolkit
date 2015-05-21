@@ -185,6 +185,9 @@ namespace CodeFull.Controls
             if (c.ClientSize.Height == 0)
                 c.ClientSize = new System.Drawing.Size(c.ClientSize.Width, 1);
 
+            if (c.ClientSize.Width == 0)
+                c.ClientSize = new System.Drawing.Size(1, c.ClientSize.Height);
+
             // Reset OpenGL size properties
             GL.Viewport(0, 0, c.ClientSize.Width, c.ClientSize.Height);
             float aspect_ratio = Width / (float)Height;
