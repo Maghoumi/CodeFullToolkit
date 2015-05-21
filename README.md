@@ -7,4 +7,4 @@ Leveraging the power of the [OpenTK library] (http://www.opentk.com/), this tool
 An example project is available in the solution directory. The example demonstrates the mesh. Try loading the "chair-simplified.ply" file located under the "files" folder under the "Example" project. The mesh was obtained using Kinect Fusion v2.
 
 ## Acknowledgement
-This library became possible [OpenTK] (http://www.opentk.com/). 
+This library became possible with [OpenTK] (http://www.opentk.com/). 
