@@ -27,19 +27,19 @@ namespace CodeFull.Controls
         /// The position of the camera in this viewport
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Vector3 CameraPosition { get; set; }
+        public Vector3d CameraPosition { get; set; }
 
         /// <summary>
         /// The point that the camera must look at
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Vector3 CameraLookAt { get; set; }
+        public Vector3d CameraLookAt { get; set; }
 
         /// <summary>
         /// The up vector of the camera (default = (0, 1, 0))
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Vector3 CameraUp { get; set; }
+        public Vector3d CameraUp { get; set; }
 
         /// <summary>
         /// Gets or sets the camera's field of view (default value = 45)
@@ -103,9 +103,9 @@ namespace CodeFull.Controls
 
             arcball = new Arcball(Width, Height, 0.01);
             this.ClearColor = Color.White;
-            this.CameraPosition = new Vector3(0f, 0f, 5f);
-            this.CameraLookAt = new Vector3(0f, 0f, 0f);
-            this.CameraUp = new Vector3(0f, 1f, 0f);
+            this.CameraPosition = new Vector3d(0, 0, 5);
+            this.CameraLookAt = new Vector3d(0, 0, 0);
+            this.CameraUp = new Vector3d(0, 1, 0);
             this.Meshes = new List<Mesh>();
             this.FieldOfView = 45;
             this.NearClipping = 0.1;
@@ -151,7 +151,7 @@ namespace CodeFull.Controls
             //GL.Enable(EnableCap.Light1);
 
             // Setup camera
-            Matrix4 lookat = Matrix4.LookAt(CameraPosition, CameraLookAt, CameraUp);
+            Matrix4d lookat = Matrix4d.LookAt(CameraPosition, CameraLookAt, CameraUp);
             GL.MatrixMode(MatrixMode.Modelview);
             GL.LoadMatrix(ref lookat);
 
@@ -268,7 +268,8 @@ namespace CodeFull.Controls
             foreach (var item in this.Meshes)
             {
                 var hitResult = item.HitTest(p);
-                if (hitResult.Count > 0)
+                // If hit anything, selected mesh is the one closest to the camera
+                if (hitResult.Count > 0 && hitResult.ZDistance < minDepth)
                 {
                     minDepth = hitResult.ZDistance;
                     arcball.Mesh = SelectedMesh = hitResult.Mesh;
