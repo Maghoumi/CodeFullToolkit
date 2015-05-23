@@ -42,6 +42,7 @@ namespace Example
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.DefaultExt = ".ply";
             dlg.Filter = "PLY Meshes (*.ply)|*.ply";
+            dlg.Multiselect = true;
 
             DialogResult result = dlg.ShowDialog();
 
@@ -60,6 +61,25 @@ namespace Example
         {
             if (null != viewport.SelectedMesh)
                 this.lstMeshes.SelectedItem = viewport.SelectedMesh;
+        }
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            if (lstMeshes.SelectedItem == null)
+                return;
+
+            Mesh mesh = lstMeshes.SelectedItem as Mesh;
+
+            SaveFileDialog dlg = new SaveFileDialog();
+            dlg.DefaultExt = ".ply";
+            dlg.Filter = "PLY Meshes (*.ply)|*.ply";
+
+            DialogResult result = dlg.ShowDialog();
+
+            if (result == System.Windows.Forms.DialogResult.OK)
+            {
+                mesh.SaveMesh(dlg.FileName);
+            }
         }
     }
 }
