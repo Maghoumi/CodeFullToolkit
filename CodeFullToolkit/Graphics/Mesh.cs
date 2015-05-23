@@ -36,26 +36,6 @@ namespace CodeFull.Graphics
             get { return this.vertices; }
         }
 
-        /// <summary>
-        /// Calculates the array of vertices of this mesh after applying
-        /// the transforms applied to this mesh.
-        /// </summary>
-        /// <returns>The transformed vertices of this mesh</returns>
-        public Vector3d[] GetTransformedVertices()
-        {
-            Vector3d[] result = new Vector3d[this.vertices.Length];
-
-            Matrix4d transform = this.translation * this.rotation * this.scale;
-
-            // Transform all vertices in parallel
-            Parallel.For(0, this.vertices.Length, i => {
-                // Apply the transformations
-                Vector3d transformed = Vector3d.Transform(this.vertices[i], transform);
-                result[i] = transformed;
-            });
-
-            return result;
-        }
 
         /// <summary>
         /// The color array of this mesh
@@ -161,14 +141,33 @@ namespace CodeFull.Graphics
         }
 
         /// <summary>
-        /// Set an arbitrary transform for this mesh in the form of a Matrix4d
+        /// Gets or sets the Matrix4d transform applied to this mesh.
+        /// The projection part of the transform is ignored. The rotation
+        /// and scaling applied to the mesh are interpreted as rotation and
+        /// scaling around the centroid of the mesh.
         /// </summary>
-        /// <param name="transform">The transform to set</param>
-        public void SetTransform(Matrix4d transform)
+        public Matrix4d Transform
         {
-            this.translation = Matrix4d.CreateTranslation(transform.ExtractTranslation());
-            this.rotation = Matrix4d.Rotate(transform.ExtractRotation());
-            this.scale = Matrix4d.Scale(transform.ExtractScale());
+            get
+            {
+                Matrix4d transform = Matrix4d.Identity;
+                // Apply center rotation and scaling
+                transform *= Matrix4d.CreateTranslation(-Center);
+                transform *= this.rotation;
+                transform *= this.scale;
+                transform *= Matrix4d.CreateTranslation(Center);
+                // Apply translation
+                transform *= this.translation;
+
+                return transform;
+            }
+
+            set
+            {
+                this.translation = Matrix4d.CreateTranslation(value.ExtractTranslation());
+                this.rotation = Matrix4d.Rotate(value.ExtractRotation());
+                this.scale = Matrix4d.Scale(value.ExtractScale());
+            }
         }
 
         /// <summary>
@@ -253,6 +252,25 @@ namespace CodeFull.Graphics
         public void ScaleBy(double scaleX, double scaleY, double scaleZ)
         {
             this.scale = Matrix4d.Scale(this.scale.ExtractScale() + new Vector3d(scaleX, scaleY, scaleZ));
+        }
+
+        /// <summary>
+        /// Calculates the array of vertices of this mesh after applying
+        /// the transforms applied to this mesh.
+        /// </summary>
+        /// <returns>The transformed vertices of this mesh</returns>
+        public Vector3d[] GetTransformedVertices()
+        {
+            Vector3d[] result = new Vector3d[this.vertices.Length];
+            Matrix4d transform = Transform;
+
+            // Transform all vertices in parallel
+            Parallel.For(0, this.vertices.Length, i =>
+            {
+                result[i] = Vector3d.Transform(this.vertices[i], transform);
+            });
+
+            return result;
         }
 
         /// <summary>
@@ -384,25 +402,8 @@ namespace CodeFull.Graphics
 
             // Handle the transforms applied to this object
             GL.PushMatrix();
-
-            #region Apply Transformations
-            // For rotation and scaling, the coordinate system has to be translated first
-            // and then the transforms should be applied
-            // Handle translation
-            GL.MultMatrix(ref this.translation);
-            // Handle rotation
-            Matrix4d centerTrans = Matrix4d.CreateTranslation(Center);
-            GL.MultMatrix(ref centerTrans);
-            GL.MultMatrix(ref this.rotation);
-            centerTrans = Matrix4d.CreateTranslation(-Center);
-            GL.MultMatrix(ref centerTrans);
-            // Handle scale
-            centerTrans = Matrix4d.CreateTranslation(Center);
-            GL.MultMatrix(ref centerTrans);
-            GL.MultMatrix(ref this.scale);
-            centerTrans = Matrix4d.CreateTranslation(-Center);
-            GL.MultMatrix(ref centerTrans);
-            #endregion
+            Matrix4d transform = this.Transform;
+            GL.MultMatrix(ref transform);
 
             // Bind the vertex array
             GL.BindBuffer(BufferTarget.ArrayBuffer, handle.vertexId);
@@ -436,25 +437,8 @@ namespace CodeFull.Graphics
 
             // Handle the transforms applied to this object
             GL.PushMatrix();
-
-            #region Apply Transformations
-            // For rotation and scaling, the coordinate system has to be translated first
-            // and then the transforms should be applied
-            // Handle translation
-            GL.MultMatrix(ref this.translation);
-            // Handle rotation
-            Matrix4d centerTrans = Matrix4d.CreateTranslation(Center);
-            GL.MultMatrix(ref centerTrans);
-            GL.MultMatrix(ref this.rotation);
-            centerTrans = Matrix4d.CreateTranslation(-Center);
-            GL.MultMatrix(ref centerTrans);
-            // Handle scale
-            centerTrans = Matrix4d.CreateTranslation(Center);
-            GL.MultMatrix(ref centerTrans);
-            GL.MultMatrix(ref this.scale);
-            centerTrans = Matrix4d.CreateTranslation(-Center);
-            GL.MultMatrix(ref centerTrans);
-            #endregion
+            Matrix4d transform = this.Transform;
+            GL.MultMatrix(ref transform);
 
             // Bind the vertex array
             GL.BindBuffer(BufferTarget.ArrayBuffer, handle.vertexId);
@@ -518,6 +502,37 @@ namespace CodeFull.Graphics
                 return hit.ZDistance;
 
             return null;
+        }
+
+        /// <summary>
+        /// Saves this mesh into a PLY format
+        /// </summary>
+        /// <param name="path">The path to the file to save this mesh to</param>
+        public void SaveMesh(string path)
+        {
+            var vertices = GetTransformedVertices();
+            var faces = this.triangleIndices;
+
+            StreamWriter file = new StreamWriter(path);
+
+            file.WriteLine("ply");
+            file.WriteLine("format ascii 1.0");
+            file.WriteLine("comment CodeFullToolkit generated");
+            file.WriteLine("element vertex " + vertices.Length);
+            file.WriteLine("property float x");
+            file.WriteLine("property float y");
+            file.WriteLine("property float z");
+            file.WriteLine("element face " + faces.Length / 3);
+            file.WriteLine("property list uchar int vertex_indices");
+            file.WriteLine("end_header");
+
+            foreach (var v in vertices)
+                file.WriteLine(v.X + " " + v.Y + " " + v.Z);
+
+            for (int i = 0; i < faces.Length; i += 3)
+                file.WriteLine("3 " + faces.ElementAt(i) + " " + faces.ElementAt(i + 1) + " " + faces.ElementAt(i + 2));
+
+            file.Close();
         }
 
         /// <summary>
