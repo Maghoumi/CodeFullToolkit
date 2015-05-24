@@ -51,6 +51,11 @@ namespace CodeFull.Graphics
         }
 
         /// <summary>
+        /// Gets the value indicating whether this mesh has vertex colors
+        /// </summary>
+        public bool HasColor { get; private set; }
+
+        /// <summary>
         /// The ID of each triangle in terms of colors (hack for picking)
         /// </summary>
         private uint[] selectColors;
@@ -284,14 +289,21 @@ namespace CodeFull.Graphics
             this.vertices = vertices;
             this.triangleIndices = triangleIndices;
 
-            if (colors != null)
+            if (colors != null) 
+            {
                 this.colors = colors;
+                this.HasColor = true;
+            }
+                
             else // If no color array is specified, fill it with gray!
             {
+                this.HasColor = false;
                 this.colors = new uint[vertices.Length];
                 Color color = Color.Gray;
+                uint grayCode = (uint)color.A << 24 | (uint)color.B << 16 | (uint)color.G << 8 | (uint)color.R;                
+
                 for (int i = 0; i < this.colors.Length; i++)
-                    this.colors[i] = (uint)color.A << 24 | (uint)color.B << 16 | (uint)color.G << 8 | (uint)color.R;
+                    this.colors[i] = grayCode;
             }
 
             // Fill in color codes for selection;
@@ -695,7 +707,7 @@ namespace CodeFull.Graphics
 
             #endregion
 
-            Mesh result = new Mesh(vertices, faces, colors);
+            Mesh result = new Mesh(vertices, faces, containsColor ? colors : null);
             result.ID = path.Substring(path.LastIndexOf("\\") == -1 ? 0 : path.LastIndexOf("\\") + 1);
             return result;
         }
