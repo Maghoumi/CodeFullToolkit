@@ -140,23 +140,32 @@ namespace CodeFull.Controls
 
             GL.ClearColor(this.ClearColor);
             GL.Enable(EnableCap.DepthTest);
+            //GL.Enable(EnableCap.Lighting);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            //GL.Enable(EnableCap.ColorMaterial);
-            //GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-            //GL.ShadeModel(ShadingModel.Smooth);
-
-            //GL.Light(LightName.Light1, LightParameter.Ambient, OpenTK.Graphics.Color4.Gray);
-            //GL.Light(LightName.Light1, LightParameter.Diffuse, OpenTK.Graphics.Color4.White);
-            //GL.Light(LightName.Light1, LightParameter.Position, (new Vector4(0f, 0f, 0f, 1f)));
-            //GL.Enable(EnableCap.Light1);
+            GL.Enable(EnableCap.ColorMaterial);
+            GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+            GL.ShadeModel(ShadingModel.Smooth);
 
             // Setup camera
             Matrix4d lookat = Matrix4d.LookAt(CameraPosition, CameraLookAt, CameraUp);
             GL.MatrixMode(MatrixMode.Modelview);
             GL.LoadMatrix(ref lookat);
 
+            
+
             foreach (var child in Meshes)
                 child.Draw();
+
+            //GL.PushMatrix();
+
+            //GL.Enable(EnableCap.Light0);
+            //GL.Light(LightName.Light0, LightParameter.Ambient, OpenTK.Graphics.Color4.Yellow);
+            //GL.Light(LightName.Light0, LightParameter.Diffuse, OpenTK.Graphics.Color4.White);
+            //GL.Light(LightName.Light0, LightParameter.Position, (new Vector4(10f, 10f, 10f, 1f)));
+
+            //GL.Disable(EnableCap.Lighting);
+
+            //GL.PopMatrix();
 
             SwapBuffers();
         }
