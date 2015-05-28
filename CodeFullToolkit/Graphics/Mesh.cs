@@ -443,6 +443,8 @@ namespace CodeFull.Graphics
         /// <returns>A set containing the vertices that form the triangle that the intersects with the points</returns>
         public HitTestResult HitTest(IEnumerable<Point> hitPoints)
         {
+            // Temporarily change the background color to white
+            GL.ClearColor(Color.White);
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             GL.EnableClientState(ArrayCap.ColorArray);
             GL.EnableClientState(ArrayCap.VertexArray);
