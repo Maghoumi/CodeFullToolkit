@@ -53,6 +53,8 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Graphics\Mesh.cs" />
+    <Compile Include="Graphics\MeshVertex.cs" />
+    <Compile Include="Graphics\VBO.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />
