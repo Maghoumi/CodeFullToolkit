@@ -270,7 +270,7 @@ namespace CodeFull.Graphics
         /// </summary>
         /// <param name="hitPoints">The points to perform hittest for</param>
         /// <returns>A set containing the vertices that form the triangle that the intersects with the points</returns>
-        public HitTestResult HitTest(IEnumerable<Point> hitPoints)
+        public override HitTestResult HitTest(IEnumerable<Point> hitPoints)
         {
             // Temporarily change the background color to white
             GL.ClearColor(Color.White);
@@ -324,11 +324,6 @@ namespace CodeFull.Graphics
             dist /= hits.Count;
 
             return new HitTestResult(this, hits, dist);
-        }
-
-        public HitTestResult HitTest(params Point[] p)
-        {
-            return this.HitTest(p.ToList());
         }
 
         /// <summary>

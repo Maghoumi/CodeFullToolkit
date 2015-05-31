@@ -187,5 +187,24 @@ namespace CodeFull.Graphics
         /// Draws the contents of this drawable using OpenGL
         /// </summary>
         public abstract void Draw();
+
+        /// <summary>
+        /// Performs a ray casting hit test using the specified points. The points 
+        /// must be specified in OpenGL window coordinate system. (Bottom left is the origin)
+        /// </summary>
+        /// <param name="hitPoints">The points to perform hittest for</param>
+        /// <returns>A set containing the results of the hit test</returns>
+        public abstract HitTestResult HitTest(IEnumerable<Point> hitPoints);
+
+        /// <summary>
+        /// Performs a ray casting hit test using the specified points. The points 
+        /// must be specified in OpenGL window coordinate system. (Bottom left is the origin)
+        /// </summary>
+        /// <param name="hitPoints">The points to perform hittest for</param>
+        /// <returns>A set containing the results of the hit test</returns>
+        public virtual HitTestResult HitTest(params Point[] hitPoints)
+        {
+            return this.HitTest(hitPoints.ToList());
+        }
     }
 }

@@ -12,13 +12,13 @@ using System.ComponentModel;
 namespace CodeFull.Controls
 {
     /// <summary>
-    /// A viewport control is able to render and manipulate triangular meshes in OpenGL.
+    /// A viewport control is able to render and manipulate Drawable instances in OpenGL.
     /// This control tries to mimic the functionality of WPF's Viewport3D control.
     /// </summary>
     public class GLViewport3D : GLControl
     {
         /// <summary>
-        /// The arcball instance that controls the transformations of the meshes
+        /// The arcball instance that controls the transformations of the drawables
         /// inside this viewport
         /// </summary>
         protected Arcball arcball;
@@ -47,7 +47,7 @@ namespace CodeFull.Controls
         public double FieldOfView { get; set; }
 
         /// <summary>
-        /// Gets or sets the arcball sensitivity for manipulating meshes in this viewport
+        /// Gets or sets the arcball sensitivity for manipulating drawables in this viewport
         /// </summary>
         public double ArcballSensitivity
         {
@@ -79,20 +79,19 @@ namespace CodeFull.Controls
         public Color ClearColor { get; set; }
 
         /// <summary>
-        /// The meshes that this viewport will display
+        /// The objects that this viewport will display
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public IList<Mesh> Meshes { get; set; }
+        public IList<Drawable> Children { get; set; }
 
         /// <summary>
-        /// The currently selected mesh of this viewport. This mesh will 
-        /// be manipulated
+        /// The currently selected drawable of this viewport. This drawable will be manipulated
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Mesh SelectedMesh { get; set; }
+        public Drawable SelectedDrawable { get; set; }
 
         /// <summary>
-        /// Event raised when the selected mesh item has changed
+        /// Event raised when the selected drawable item has changed
         /// </summary>
         public event EventHandler SelectionChanged;
 
@@ -106,7 +105,7 @@ namespace CodeFull.Controls
             this.CameraPosition = new Vector3d(0, 0, 5);
             this.CameraLookAt = new Vector3d(0, 0, 0);
             this.CameraUp = new Vector3d(0, 1, 0);
-            this.Meshes = new List<Mesh>();
+            this.Children = new List<Drawable>();
             this.FieldOfView = 45;
             this.NearClipping = 0.1;
             this.FarClipping = 64;
@@ -133,7 +132,7 @@ namespace CodeFull.Controls
 
         private void Render()
         {
-            // Apply arcball transforms to the selected mesh
+            // Apply arcball transforms to the selected drawable
             var cursor = OpenTK.Input.Mouse.GetCursorState();
             Point cursorPos = PointToClient(new Point(cursor.X, cursor.Y));
             arcball.ApplyTransforms(cursorPos);
@@ -153,7 +152,7 @@ namespace CodeFull.Controls
 
             
 
-            foreach (var child in Meshes)
+            foreach (var child in Children)
                 child.Draw();
 
             //GL.PushMatrix();
@@ -210,58 +209,58 @@ namespace CodeFull.Controls
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (SelectedMesh == null)
+            if (SelectedDrawable == null)
                 return base.ProcessCmdKey(ref msg, keyData);
 
             if (keyData == Keys.D)
             {
-                SelectedMesh.RotateBy(0, 0.1, 0);
+                SelectedDrawable.RotateBy(0, 0.1, 0);
             }
             if (keyData == Keys.A)
             {
-                SelectedMesh.RotateBy(0, -0.1, 0);
+                SelectedDrawable.RotateBy(0, -0.1, 0);
             }
             if (keyData == Keys.W)
             {
-                SelectedMesh.RotateBy(-0.1, 0, 0);
+                SelectedDrawable.RotateBy(-0.1, 0, 0);
             }
             if (keyData == Keys.S)
             {
-                SelectedMesh.RotateBy(0.1, 0, 0);
+                SelectedDrawable.RotateBy(0.1, 0, 0);
             }
             if (keyData == Keys.PageUp)
             {
-                SelectedMesh.TranslateBy(0, 0, -0.1);
+                SelectedDrawable.TranslateBy(0, 0, -0.1);
             }
             if (keyData == Keys.PageDown)
             {
-                SelectedMesh.TranslateBy(0, 0, 0.1);
+                SelectedDrawable.TranslateBy(0, 0, 0.1);
             }
             if (keyData == Keys.Add)
             {
-                SelectedMesh.ScaleBy(0.1, 0.1, 0.1);
+                SelectedDrawable.ScaleBy(0.1, 0.1, 0.1);
             }
 
             if (keyData == Keys.Subtract)
             {
-                SelectedMesh.ScaleBy(-0.1, -0.1, -0.1);
+                SelectedDrawable.ScaleBy(-0.1, -0.1, -0.1);
             }
 
             if (keyData == Keys.Left)
             {
-                SelectedMesh.TranslateBy(-0.1, 0, 0);
+                SelectedDrawable.TranslateBy(-0.1, 0, 0);
             }
             if (keyData == Keys.Right)
             {
-                SelectedMesh.TranslateBy(0.1, 0, 0);
+                SelectedDrawable.TranslateBy(0.1, 0, 0);
             }
             if (keyData == Keys.Up)
             {
-                SelectedMesh.TranslateBy(0, 0.1, 0);
+                SelectedDrawable.TranslateBy(0, 0.1, 0);
             }
             if (keyData == Keys.Down)
             {
-                SelectedMesh.TranslateBy(0, -0.1, 0);
+                SelectedDrawable.TranslateBy(0, -0.1, 0);
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }
@@ -274,14 +273,14 @@ namespace CodeFull.Controls
             Point p = GetOpenGLMouseCoordinates(e);
             double minDepth = int.MaxValue;
 
-            foreach (var item in this.Meshes)
+            foreach (var item in this.Children)
             {
                 var hitResult = item.HitTest(p);
-                // If hit anything, selected mesh is the one closest to the camera
+                // If hit anything, selected drawable is the one closest to the camera
                 if (hitResult.Count > 0 && hitResult.ZDistance < minDepth)
                 {
                     minDepth = hitResult.ZDistance;
-                    arcball.Mesh = SelectedMesh = hitResult.Mesh;
+                    arcball.Drawable = SelectedDrawable = hitResult.Drawable;
                 }
             }
 
@@ -325,7 +324,7 @@ namespace CodeFull.Controls
 
         /// <summary>
         /// Performs a hit test on all the children of this viewport and
-        /// returns a set of hit points (mesh triangle coordinates)
+        /// returns a set of hit points
         /// </summary>
         /// <param name="points">A collection of points to use in hit testing</param>
         /// <returns>A set of triangle coordinates that intersect with the ray</returns>
@@ -333,7 +332,7 @@ namespace CodeFull.Controls
         {
             HashSet<Vector3d> result = new HashSet<Vector3d>();
 
-            foreach (var item in Meshes)
+            foreach (var item in Children)
             {
                 var hits = item.HitTest(points);
 
@@ -348,11 +347,11 @@ namespace CodeFull.Controls
         /// Performs a hit test on the specified child and returns the result
         /// </summary>
         /// <param name="points">A collection of points to use in hit testing</param>
-        /// <param name="mesh">The mesh to perform hit test on</param>
+        /// <param name="drawable">The drawable to perform hit test on</param>
         /// <returns>The hit test result</returns>
-        public HitTestResult HitTest(IEnumerable<Point> points, Mesh mesh)
+        public HitTestResult HitTest(IEnumerable<Point> points, Drawable drawable)
         {
-            return mesh.HitTest(points);
+            return drawable.HitTest(points);
         }
 
         /// <summary>
@@ -363,230 +362,6 @@ namespace CodeFull.Controls
         public Point GetOpenGLMouseCoordinates(MouseEventArgs e)
         {
             return new Point(e.X, this.Height - e.Y);
-        }
-    }
-
-    public class Arcball
-    {
-        private const float Epsilon = 1.0e-5f;
-
-        /// <summary>
-        /// The last set mouse cursor position
-        /// </summary>
-        private Point mousePosition;
-
-        /// <summary>
-        /// Start of the click vector (mapped to the sphere)
-        /// </summary>
-        private Vector3d clickStartVector;
-
-        /// <summary>
-        /// End of the click vector (mapped to the sphere)
-        /// </summary>
-        private Vector3d clickEndVector;
-
-        /// <summary>
-        /// Adjusted mouse bounds width
-        /// </summary>
-        private double adjustedWidth;
-
-        /// <summary>
-        /// Adjusted mouse bounds height
-        /// </summary>
-        private double adjustedHeight;
-
-        /// <summary>
-        /// The height of the OpenGL canvas
-        /// </summary>
-        private int height;
-
-        /// <summary>
-        /// A mapping of the mouse button to their pressed status
-        /// </summary>
-        private IDictionary<MouseButtons, bool> buttonMapping = new Dictionary<MouseButtons, bool>();
-
-        /// <summary>
-        /// The sensitivity of this arcball (default is 0.01)
-        /// </summary>
-        public double Sensitivity { get; set; }
-
-        /// <summary>
-        /// The mesh that this arcball instance performs on
-        /// </summary>
-        public Mesh Mesh { get; set; }
-
-        /// <summary>
-        /// Instantiates a new Arcball with the specified boundaries
-        /// for the width and height
-        /// </summary>
-        /// <param name="width">The width</param>
-        /// <param name="height">The height</param>
-        /// <param name="sensitivity">The sensitivity of the trackball</param>
-        public Arcball(int width, int height, double sensitivity = 0.01)
-        {
-            this.Sensitivity = sensitivity;
-            this.Mesh = null;
-            clickStartVector = new Vector3d();
-            clickEndVector = new Vector3d();
-            SetBounds(width, height);
-
-            buttonMapping[MouseButtons.Left] = false;
-            buttonMapping[MouseButtons.Middle] = false;
-            buttonMapping[MouseButtons.Right] = false;
-        }
-
-        /// <summary>
-        /// Maps the given point to the sphere and returns the resulting vector
-        /// </summary>
-        /// <param name="point">The point to map to sphere</param>
-        /// <returns>The vector of the mapped point</returns>
-        private Vector3d MapToSphere(Point point)
-        {
-            Vector3d result = new Vector3d();
-
-            PointF tempPoint = new PointF(point.X, point.Y);
-
-            //Adjust point coords and scale down to range of [-1 ... 1]
-            tempPoint.X = (float)(tempPoint.X * this.adjustedWidth) - 1.0f;
-            tempPoint.Y = (float)(1.0f - (tempPoint.Y * this.adjustedHeight));
-
-            //Compute square of the length of the vector from this point to the center
-            float length = (tempPoint.X * tempPoint.X) + (tempPoint.Y * tempPoint.Y);
-
-            //If the point is mapped outside the sphere... (length > radius squared)
-            if (length > 1.0f)
-            {
-                //Compute a normalizing factor (radius / sqrt(length))
-                float norm = (float)(1.0 / Math.Sqrt(length));
-
-                //Return the "normalized" vector, a point on the sphere
-                result.X = tempPoint.X * norm;
-                result.Y = tempPoint.Y * norm;
-                result.Z = 0.0f;
-            }
-            //Else it's inside
-            else
-            {
-                //Return a vector to a point mapped inside the sphere sqrt(radius squared - length)
-                result.X = tempPoint.X;
-                result.Y = tempPoint.Y;
-                result.Z = (float)System.Math.Sqrt(1.0f - length);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Set the boundaries of the mouse click
-        /// </summary>
-        /// <param name="width">The width boundary</param>
-        /// <param name="height">The height boundary</param>
-        public void SetBounds(int width, int height)
-        {
-            //Set adjustment factor for width/height
-            this.adjustedWidth = 1.0 / ((width - 1.0) * 0.5);
-            this.adjustedHeight = 1.0 / ((height - 1.0) * 0.5);
-            this.height = height;
-        }
-
-        /// <summary>
-        /// Sets the pressed status of the specified mouse button
-        /// </summary>
-        /// <param name="button">The mouse button to set</param>
-        /// <param name="isPressed">The pressed status of that button</param>
-        public void SetMouseButtonStatus(MouseButtons button, bool isPressed)
-        {
-            this.buttonMapping[button] = isPressed;
-        }
-
-        /// <summary>
-        /// Sets the start position of the mouse
-        /// </summary>
-        /// <param name="position"></param>
-        public void SetMousePosition(Point position)
-        {
-            this.mousePosition = position;
-            this.clickStartVector = MapToSphere(position);
-        }
-
-        /// <summary>
-        /// Calculate the rotation for the current point
-        /// </summary>
-        /// <param name="currentPoint"></param>
-        /// <returns></returns>
-        protected Quaterniond GetRotation(Point currentPoint)
-        {
-            Quaterniond result = Quaterniond.Identity; // Must be identity! Not zero!!
-
-            //Map the point to the sphere
-            this.clickEndVector = this.MapToSphere(currentPoint);
-
-            //Return the quaternion equivalent to the rotation
-            //Compute the vector perpendicular to the begin and end vectors
-            Vector3d Perp = Vector3d.Cross(clickStartVector, clickEndVector);
-
-            //Compute the length of the perpendicular vector
-            if (Perp.Length > Epsilon)
-            //if its non-zero
-            {
-                //We're ok, so return the perpendicular vector as the transform after all
-                result.X = Perp.X;
-                result.Y = Perp.Y;
-                result.Z = Perp.Z;
-                //In the quaternion values, w is cosine (theta / 2), where theta is the rotation angle
-                result.W = Vector3d.Dot(clickStartVector, clickEndVector);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Applies all the transformations possible based on the current status of mouse buttons
-        /// </summary>
-        /// <param name="currentCursorPosition">The current position of the mouse cursor</param>
-        public virtual void ApplyTransforms(Point currentCursorPosition)
-        {
-            if (this.Mesh == null)
-                return;
-
-            if (this.buttonMapping[MouseButtons.Left])
-            {
-                // Convert current and previous mouse positions to OpenGL window coordinates
-                Point prevPosition = new Point(this.mousePosition.X, this.height - this.mousePosition.Y);
-                Point currentPosition = new Point(currentCursorPosition.X, this.height - currentCursorPosition.Y);
-
-                int deltaX = currentPosition.X - prevPosition.X;
-                int deltaY = currentPosition.Y - prevPosition.Y;
-
-                var keyboard = OpenTK.Input.Keyboard.GetState();
-
-                if (keyboard.IsKeyDown(OpenTK.Input.Key.ControlLeft) || keyboard.IsKeyDown(OpenTK.Input.Key.ControlRight))
-                {
-                    this.Mesh.TranslateBy(0, 0, -deltaY * Sensitivity * 3);
-                }
-                else
-                    this.Mesh.TranslateBy(deltaX * Sensitivity, deltaY * Sensitivity, 0);
-            }
-
-            if (this.buttonMapping[MouseButtons.Middle])
-            {
-                // Convert current and previous mouse positions to OpenGL window coordinates
-                Point prevPosition = new Point(this.mousePosition.X, this.height - this.mousePosition.Y);
-                Point currentPosition = new Point(currentCursorPosition.X, this.height - currentCursorPosition.Y);
-
-                double scale = (currentPosition.X - prevPosition.X) * Sensitivity;
-                this.Mesh.ScaleBy(scale, scale, scale);
-            }
-
-            if (this.buttonMapping[MouseButtons.Right])
-            {
-                Quaterniond newRot = GetRotation(currentCursorPosition);
-                Matrix4d rot = Matrix4d.Rotate(newRot);
-                Mesh.Rotation *= rot;
-            }
-
-            // Update the cursor position
-            SetMousePosition(currentCursorPosition);
         }
     }
 }

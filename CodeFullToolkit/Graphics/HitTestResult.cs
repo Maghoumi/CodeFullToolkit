@@ -12,9 +12,9 @@ namespace CodeFull.Graphics
     public class HitTestResult : IEnumerable<Vector3d>
     {
         /// <summary>
-        /// The mesh that was hit by the ray
+        /// The drawable that was hit by the ray
         /// </summary>
-        public Mesh Mesh { get; set; }
+        public Drawable Drawable { get; set; }
 
         /// <summary>
         /// A set of triangle vertices that intersect the ray
@@ -34,12 +34,12 @@ namespace CodeFull.Graphics
         /// <summary>
         /// Initializes a new instance of this class
         /// </summary>
-        /// <param name="mesh">The mesh that was hit</param>
+        /// <param name="drawable">The drawable that was hit</param>
         /// <param name="hitPoints">The hit points</param>
         /// <param name="zDistance">The depth of the hit</param>
-        public HitTestResult(Mesh mesh, HashSet<Vector3d> hitPoints, double zDistance)
+        public HitTestResult(Drawable drawable, HashSet<Vector3d> hitPoints, double zDistance)
         {
-            this.Mesh = mesh;
+            this.Drawable = drawable;
             this.HitPoints = hitPoints;
             this.ZDistance = zDistance;
             this.Count = this.HitPoints.Count;

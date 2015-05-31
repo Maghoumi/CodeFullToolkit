@@ -20,7 +20,7 @@ namespace Example
         private void Form1_Load(object sender, EventArgs e)
         {
             Mesh mesh = Mesh.LoadFromPLYFile(@"..\..\files\cube.ply");
-            viewport.Meshes.Add(mesh);
+            viewport.Children.Add(mesh);
             lstMeshes.Items.Add(mesh);
 
             lblHelp.Text = "Click a mesh to select\n" +
@@ -34,7 +34,7 @@ namespace Example
             Mesh m = (lstMeshes.SelectedValue as Mesh);
 
             if (m != null)
-                viewport.SelectedMesh = (Mesh)lstMeshes.SelectedValue;
+                viewport.SelectedDrawable = (Mesh)lstMeshes.SelectedValue;
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -51,7 +51,7 @@ namespace Example
                 foreach (var item in dlg.FileNames)
                 {
                     Mesh m = Mesh.LoadFromPLYFile(item);
-                    viewport.Meshes.Add(m);
+                    viewport.Children.Add(m);
                     lstMeshes.Items.Add(m);
                 }
             }
@@ -59,8 +59,8 @@ namespace Example
 
         private void viewport_SelectionChanged(object sender, EventArgs e)
         {
-            if (null != viewport.SelectedMesh)
-                this.lstMeshes.SelectedItem = viewport.SelectedMesh;
+            if (null != viewport.SelectedDrawable)
+                this.lstMeshes.SelectedItem = viewport.SelectedDrawable;
         }
 
         private void btnSave_Click(object sender, EventArgs e)
