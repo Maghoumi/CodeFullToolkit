@@ -52,6 +52,8 @@
     <Compile Include="Controls\GLViewport3D.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="Graphics\Drawable.cs" />
+    <Compile Include="Graphics\HitTestResult.cs" />
     <Compile Include="Graphics\Mesh.cs" />
     <Compile Include="Graphics\MeshVertex.cs" />
     <Compile Include="Graphics\VBO.cs" />

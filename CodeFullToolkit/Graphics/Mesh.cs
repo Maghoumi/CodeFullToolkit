@@ -16,7 +16,7 @@ namespace CodeFull.Graphics
     /// rendered in OpenGL, manipulated in C# and be the subject of CSG operations
     /// in Carve
     /// </summary>
-    public class Mesh
+    public class Mesh : Drawable
     {
         /// <summary>
         /// Internal ID counter for meshes
@@ -84,180 +84,9 @@ namespace CodeFull.Graphics
         private Vbo handle;
 
         /// <summary>
-        /// Internally stores the centroid of this mesh
-        /// </summary>
-        private Vector3d center;
-
-        /// <summary>
-        /// Gets the center point of this mesh
-        /// </summary>
-        public Vector3d Center
-        {
-            get { return this.center; }
-        }
-
-        /// <summary>
-        /// The translation applied to this mesh
-        /// </summary>
-        private Matrix4d translation = Matrix4d.Identity;
-
-        /// <summary>
-        /// Gets or sets the translation matrix applied to this mesh
-        /// </summary>
-        public Matrix4d Translation
-        {
-            get { return this.translation; }
-            set { this.translation = value; }
-        }
-
-        /// <summary>
         /// An arbitrary ID string associated with this mesh
         /// </summary>
         public string ID { get; set; }
-
-        /// <summary>
-        /// The rotation applied to this mesh
-        /// </summary>
-        private Matrix4d rotation = Matrix4d.Identity;
-
-        /// <summary>
-        /// Gets or sets the rotation matrix applied to this mesh
-        /// </summary>
-        public Matrix4d Rotation
-        {
-            get { return this.rotation; }
-
-            set{ this.rotation = value; }
-        }
-
-        /// <summary>
-        /// The scale applied to this mesh
-        /// </summary>
-        private Matrix4d scale = Matrix4d.Identity;
-
-        /// <summary>
-        /// Gets or sets the scale matrix applied to this mesh
-        /// </summary>
-        public Matrix4d Scale
-        {
-            get { return this.scale; }
-
-            set { this.scale = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets the Matrix4d transform applied to this mesh.
-        /// The projection part of the transform is ignored. The rotation
-        /// and scaling applied to the mesh are interpreted as rotation and
-        /// scaling around the centroid of the mesh.
-        /// </summary>
-        public Matrix4d Transform
-        {
-            get
-            {
-                Matrix4d transform = Matrix4d.Identity;
-                // Apply center rotation and scaling
-                transform *= Matrix4d.CreateTranslation(-Center);
-                transform *= this.rotation;
-                transform *= this.scale;
-                transform *= Matrix4d.CreateTranslation(Center);
-                // Apply translation
-                transform *= this.translation;
-
-                return transform;
-            }
-
-            set
-            {
-                this.translation = Matrix4d.CreateTranslation(value.ExtractTranslation());
-                this.rotation = Matrix4d.Rotate(value.ExtractRotation());
-                this.scale = Matrix4d.Scale(value.ExtractScale());
-            }
-        }
-
-        /// <summary>
-        /// Relatively transform this mesh by the specified transformation
-        /// matrix
-        /// </summary>
-        /// <param name="transform">The transform to apply</param>
-        public void TransformBy(Matrix4d transform)
-        {
-            this.translation *= Matrix4d.CreateTranslation(transform.ExtractTranslation());
-            this.rotation *= Matrix4d.Rotate(transform.ExtractRotation());
-            this.scale = Matrix4d.Scale(this.scale.ExtractScale() + transform.ExtractScale());
-        }
-
-        /// <summary>
-        /// Sets the translation of this mesh to the specified offsets
-        /// </summary>
-        /// <param name="offsetX">The X offset</param>
-        /// <param name="offsetY">The Y offset</param>
-        /// <param name="offsetZ">The Z offset</param>
-        public void SetTranslation(double offsetX, double offsetY, double offsetZ)
-        {
-            this.translation = Matrix4d.CreateTranslation(offsetX, offsetY, offsetZ);
-        }
-
-        /// <summary>
-        /// Sets the rotation of this mesh to the specified angles
-        /// </summary>
-        /// <param name="angleX">The X angle</param>
-        /// <param name="angleY">The Y angle</param>
-        /// <param name="angleZ">The Z angle</param>
-        public void SetRotation(double angleX, double angleY, double angleZ)
-        {
-            Matrix4d rotX = Matrix4d.CreateRotationX(angleX);
-            Matrix4d rotY = Matrix4d.CreateRotationX(angleY);
-            Matrix4d rotZ = Matrix4d.CreateRotationX(angleZ);
-
-            this.rotation = rotX * rotY * rotZ;
-        }
-
-        /// <summary>
-        /// Sets the scale of this mesh to the specified amounts
-        /// </summary>
-        /// <param name="scaleX">The X scale</param>
-        /// <param name="scaleY">The Y scale</param>
-        /// <param name="scaleZ">The Z scale</param>
-        public void SetScale(double scaleX, double scaleY, double scaleZ)
-        {
-            this.scale = Matrix4d.Scale(scaleX, scaleY, scaleZ);
-        }
-
-        /// <summary>
-        /// Relatively transform this mesh by the specified offsets
-        /// </summary>
-        /// <param name="offsetX">The X offset</param>
-        /// <param name="offsetY">The Y offset</param>
-        /// <param name="offsetZ">The Z offset</param>
-        public void TranslateBy(double offsetX, double offsetY, double offsetZ)
-        {
-            this.translation *= Matrix4d.CreateTranslation(new Vector3d(offsetX, offsetY, offsetZ));
-        }
-
-        /// <summary>
-        /// Relatively rotates this mesh by the specified angle
-        /// </summary>
-        /// <param name="angleX">The X angle</param>
-        /// <param name="angleY">The Y angle</param>
-        /// <param name="angleZ">The Z angle</param>
-        public void RotateBy(double angleX, double angleY, double angleZ)
-        {
-            this.rotation *= Matrix4d.CreateRotationX(angleX);
-            this.rotation *= Matrix4d.CreateRotationY(angleY);
-            this.rotation *= Matrix4d.CreateRotationZ(angleZ);
-        }
-
-        /// <summary>
-        /// Relatively scales this mesh by the specified amounts
-        /// </summary>
-        /// <param name="scaleX">The X scale</param>
-        /// <param name="scaleY">The Y scale</param>
-        /// <param name="scaleZ">The Z scale</param>
-        public void ScaleBy(double scaleX, double scaleY, double scaleZ)
-        {
-            this.scale = Matrix4d.Scale(this.scale.ExtractScale() + new Vector3d(scaleX, scaleY, scaleZ));
-        }
 
         /// <summary>
         /// Calculates the array of vertices of this mesh after applying
@@ -400,7 +229,7 @@ namespace CodeFull.Graphics
         /// Draws the mesh using OpenGL. The method must be called in a drawing context (after setting
         /// the view properties and performing clearing)
         /// </summary>
-        public virtual void Draw()
+        public override void Draw()
         {
             // To draw a VBO:
             // 1) Ensure that the VertexArray client state is enabled.
@@ -717,64 +546,6 @@ namespace CodeFull.Graphics
         public override string ToString()
         {
             return this.ID;
-        }
-    }
-
-    /// <summary>
-    /// Represents the result of a hit test performed on a mesh
-    /// </summary>
-    public class HitTestResult : IEnumerable<Vector3d>
-    {
-        /// <summary>
-        /// The mesh that was hit by the ray
-        /// </summary>
-        public Mesh Mesh { get; set; }
-
-        /// <summary>
-        /// A set of triangle vertices that intersect the ray
-        /// </summary>
-        public HashSet<Vector3d> HitPoints { get; set; }
-
-        /// <summary>
-        /// The z-Depth of the hit
-        /// </summary>
-        public double ZDistance { get; set; }
-
-        /// <summary>
-        /// The number of the hits that occurred
-        /// </summary>
-        public int Count { get; private set; }
-
-        /// <summary>
-        /// Initializes a new instance of this class
-        /// </summary>
-        /// <param name="mesh">The mesh that was hit</param>
-        /// <param name="hitPoints">The hit points</param>
-        /// <param name="zDistance">The depth of the hit</param>
-        public HitTestResult(Mesh mesh, HashSet<Vector3d> hitPoints, double zDistance)
-        {
-            this.Mesh = mesh;
-            this.HitPoints = hitPoints;
-            this.ZDistance = zDistance;
-            this.Count = this.HitPoints.Count;
-        }
-
-        /// <summary>
-        /// The iterator used for foreach
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerator<Vector3d> GetEnumerator()
-        {
-            return this.HitPoints.GetEnumerator();
-        }
-
-        /// <summary>
-        /// The iterator used for foreach
-        /// </summary>
-        /// <returns></returns>
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return this.HitPoints.GetEnumerator();
         }
     }
 }
