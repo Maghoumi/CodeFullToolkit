@@ -36,7 +36,6 @@ namespace CodeFull.Graphics
             get { return this.vertices; }
         }
 
-
         /// <summary>
         /// The color array of this mesh
         /// </summary>

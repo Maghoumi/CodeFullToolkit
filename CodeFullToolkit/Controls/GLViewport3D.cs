@@ -130,6 +130,25 @@ namespace CodeFull.Controls
             this.GLViewport3D_Resize(this, EventArgs.Empty);
         }
 
+        /// <summary>
+        /// Gets the model view matrix based on the viewport setup
+        /// </summary>
+        /// <returns>The model view matrix</returns>
+        protected Matrix4d GetModelViewMatrix()
+        {
+            return Matrix4d.LookAt(CameraPosition, CameraLookAt, CameraUp);
+        }
+
+        /// <summary>
+        /// Gets the projection matrix based on the control setup
+        /// </summary>
+        /// <returns>The projection matrix</returns>
+        protected Matrix4d GetProjectionMatrix()
+        {
+            float aspect_ratio = this.ClientSize.Width / (float)this.ClientSize.Height;
+            return Matrix4d.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(this.FieldOfView), aspect_ratio, (float)NearClipping, (float)FarClipping);
+        }
+
         private void Render()
         {
             // Apply arcball transforms to the selected drawable
@@ -145,10 +164,16 @@ namespace CodeFull.Controls
             GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
             GL.ShadeModel(ShadingModel.Smooth);
 
+            // Setup viewport and projection matrix
+            GL.Viewport(0, 0, this.ClientSize.Width, this.ClientSize.Height);
+            Matrix4d perpective = GetProjectionMatrix();
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadMatrix(ref perpective);
+
             // Setup camera
-            Matrix4d lookat = Matrix4d.LookAt(CameraPosition, CameraLookAt, CameraUp);
+            Matrix4d modelView = GetModelViewMatrix();
             GL.MatrixMode(MatrixMode.Modelview);
-            GL.LoadMatrix(ref lookat);
+            GL.LoadMatrix(ref modelView);
 
             
 
@@ -170,6 +195,12 @@ namespace CodeFull.Controls
         }
 
         #region Even Handling
+
+        protected override void OnPaint(PaintEventArgs e)
+        {
+            base.OnPaint(e);
+            Render();
+        }
         protected override void OnHandleDestroyed(EventArgs e)
         {
             base.OnHandleDestroyed(e);
@@ -195,13 +226,6 @@ namespace CodeFull.Controls
 
             if (c.ClientSize.Width == 0)
                 c.ClientSize = new System.Drawing.Size(1, c.ClientSize.Height);
-
-            // Reset OpenGL size properties
-            GL.Viewport(0, 0, c.ClientSize.Width, c.ClientSize.Height);
-            float aspect_ratio = Width / (float)Height;
-            Matrix4 perpective = Matrix4.CreatePerspectiveFieldOfView(MathHelper.PiOver4, aspect_ratio, (float)NearClipping, (float)FarClipping);
-            GL.MatrixMode(MatrixMode.Projection);
-            GL.LoadMatrix(ref perpective);
 
             // Readjust arcball instance
             arcball.SetBounds(Width, Height);
