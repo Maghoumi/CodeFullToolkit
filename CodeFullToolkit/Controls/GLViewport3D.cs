@@ -151,6 +151,9 @@ namespace CodeFull.Controls
 
         private void Render()
         {
+			if (DesignMode)
+                return;
+			
             // Apply arcball transforms to the selected drawable
             var cursor = OpenTK.Input.Mouse.GetCursorState();
             Point cursorPos = PointToClient(new Point(cursor.X, cursor.Y));
@@ -216,9 +219,6 @@ namespace CodeFull.Controls
 
         private void GLViewport3D_Resize(object sender, EventArgs e)
         {
-            if (DesignMode)
-                return;
-
             OpenTK.GLControl c = sender as OpenTK.GLControl;
 
             if (c.ClientSize.Height == 0)

@@ -154,6 +154,8 @@ namespace CodeFull.Graphics
 
             Init();
             CalculateCenter();
+
+            this.Attachments = new List<Drawable>();
             
             Mesh.idGen++;
             this.ID = "Mesh-" + idGen.ToString();
@@ -261,6 +263,12 @@ namespace CodeFull.Graphics
             GL.DrawElements(PrimitiveType.Triangles, handle.numElements, DrawElementsType.UnsignedInt, IntPtr.Zero);
 
             GL.PopMatrix();
+
+            foreach (var attachment in this.Attachments)
+            {
+                attachment.Transform = this.Transform;
+                attachment.Draw();
+            }
         }
 
         /// <summary>

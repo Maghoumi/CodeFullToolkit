@@ -13,6 +13,11 @@ namespace CodeFull.Graphics
     public abstract class Drawable
     {
         /// <summary>
+        /// Gets or sets the list of drawables attached to this CodeFull.Graphics.Drawable instance
+        /// </summary>
+        public IList<Drawable> Attachments { get; set; }
+
+        /// <summary>
         /// Internally stores the centroid of this mesh
         /// </summary>
         protected Vector3d center;
