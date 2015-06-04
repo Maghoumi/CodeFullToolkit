@@ -95,7 +95,7 @@ namespace CodeFull.Graphics
         public Vector3d[] GetTransformedVertices()
         {
             Vector3d[] result = new Vector3d[this.vertices.Length];
-            Matrix4d transform = Transform;
+            Matrix4d transform = Transform.Value;
 
             // Transform all vertices in parallel
             Parallel.For(0, this.vertices.Length, i =>
@@ -244,7 +244,7 @@ namespace CodeFull.Graphics
 
             // Handle the transforms applied to this object
             GL.PushMatrix();
-            Matrix4d transform = this.Transform;
+            Matrix4d transform = this.Transform.Value;
             GL.MultMatrix(ref transform);
 
             // Bind the vertex array
@@ -287,7 +287,7 @@ namespace CodeFull.Graphics
 
             // Handle the transforms applied to this object
             GL.PushMatrix();
-            Matrix4d transform = this.Transform;
+            Matrix4d transform = this.Transform.Value;
             GL.MultMatrix(ref transform);
 
             // Bind the vertex array

@@ -238,53 +238,53 @@ namespace CodeFull.Controls
 
             if (keyData == Keys.D)
             {
-                SelectedDrawable.RotateBy(0, 0.1, 0);
+                SelectedDrawable.Transform.RotateBy(0, 0.1, 0, SelectedDrawable.Transform.Transform(SelectedDrawable.Center));
             }
             if (keyData == Keys.A)
             {
-                SelectedDrawable.RotateBy(0, -0.1, 0);
+                SelectedDrawable.Transform.RotateBy(0, -0.1, 0, SelectedDrawable.Transform.Transform(SelectedDrawable.Center));
             }
             if (keyData == Keys.W)
             {
-                SelectedDrawable.RotateBy(-0.1, 0, 0);
+                SelectedDrawable.Transform.RotateBy(-0.1, 0, 0, SelectedDrawable.Transform.Transform(SelectedDrawable.Center));
             }
             if (keyData == Keys.S)
             {
-                SelectedDrawable.RotateBy(0.1, 0, 0);
+                SelectedDrawable.Transform.RotateBy(0.1, 0, 0, SelectedDrawable.Transform.Transform(SelectedDrawable.Center));
             }
             if (keyData == Keys.PageUp)
             {
-                SelectedDrawable.TranslateBy(0, 0, -0.1);
+                SelectedDrawable.Transform.TranslateBy(0, 0, -0.1);
             }
             if (keyData == Keys.PageDown)
             {
-                SelectedDrawable.TranslateBy(0, 0, 0.1);
+                SelectedDrawable.Transform.TranslateBy(0, 0, 0.1);
             }
             if (keyData == Keys.Add)
             {
-                SelectedDrawable.ScaleBy(0.1, 0.1, 0.1);
+                SelectedDrawable.Transform.ScaleBy(0.1, 0.1, 0.1, SelectedDrawable.Transform.Transform(SelectedDrawable.Center));
             }
 
             if (keyData == Keys.Subtract)
             {
-                SelectedDrawable.ScaleBy(-0.1, -0.1, -0.1);
+                SelectedDrawable.Transform.ScaleBy(-0.1, -0.1, -0.1, SelectedDrawable.Transform.Transform(SelectedDrawable.Center));
             }
 
             if (keyData == Keys.Left)
             {
-                SelectedDrawable.TranslateBy(-0.1, 0, 0);
+                SelectedDrawable.Transform.TranslateBy(-0.1, 0, 0);
             }
             if (keyData == Keys.Right)
             {
-                SelectedDrawable.TranslateBy(0.1, 0, 0);
+                SelectedDrawable.Transform.TranslateBy(0.1, 0, 0);
             }
             if (keyData == Keys.Up)
             {
-                SelectedDrawable.TranslateBy(0, 0.1, 0);
+                SelectedDrawable.Transform.TranslateBy(0, 0.1, 0);
             }
             if (keyData == Keys.Down)
             {
-                SelectedDrawable.TranslateBy(0, -0.1, 0);
+                SelectedDrawable.Transform.TranslateBy(0, -0.1, 0);
             }
             return base.ProcessCmdKey(ref msg, keyData);
         }

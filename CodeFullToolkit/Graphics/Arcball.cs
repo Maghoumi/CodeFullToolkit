@@ -1,4 +1,5 @@
-﻿using OpenTK;
+﻿using CodeFull.Graphics.Transform;
+using OpenTK;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -208,10 +209,10 @@ namespace CodeFull.Graphics
 
                 if (keyboard.IsKeyDown(OpenTK.Input.Key.ControlLeft) || keyboard.IsKeyDown(OpenTK.Input.Key.ControlRight))
                 {
-                    this.Drawable.TranslateBy(0, 0, -deltaY * Sensitivity * 3);
+                    this.Drawable.Transform.TranslateBy(0, 0, -deltaY * Sensitivity * 3);
                 }
                 else
-                    this.Drawable.TranslateBy(deltaX * Sensitivity, deltaY * Sensitivity, 0);
+                    this.Drawable.Transform.TranslateBy(deltaX * Sensitivity, deltaY * Sensitivity, 0);
             }
 
             if (this.buttonMapping[MouseButtons.Middle])
@@ -221,14 +222,13 @@ namespace CodeFull.Graphics
                 Point currentPosition = new Point(currentCursorPosition.X, this.height - currentCursorPosition.Y);
 
                 double scale = (currentPosition.X - prevPosition.X) * Sensitivity;
-                this.Drawable.ScaleBy(scale, scale, scale);
+                this.Drawable.Transform.ScaleBy(scale, scale, scale, Drawable.TransformedCenter);
             }
 
             if (this.buttonMapping[MouseButtons.Right])
             {
                 Quaterniond newRot = GetRotation(currentCursorPosition);
-                Matrix4d rot = Matrix4d.Rotate(newRot);
-                Drawable.Rotation *= rot;
+                Drawable.Transform.Children.Add(new QuaternionRotateTransform3D(newRot, Drawable.TransformedCenter));
             }
 
             // Update the cursor position

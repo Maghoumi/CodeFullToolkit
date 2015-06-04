@@ -57,6 +57,13 @@
     <Compile Include="Graphics\HitTestResult.cs" />
     <Compile Include="Graphics\Mesh.cs" />
     <Compile Include="Graphics\MeshVertex.cs" />
+    <Compile Include="Graphics\Transform\EulerRotateTransform3D.cs" />
+    <Compile Include="Graphics\Transform\MatrixTransform3D.cs" />
+    <Compile Include="Graphics\Transform\QuaternionRotateTransform3D.cs" />
+    <Compile Include="Graphics\Transform\ScaleTransform3D.cs" />
+    <Compile Include="Graphics\Transform\Transform3D.cs" />
+    <Compile Include="Graphics\Transform\Transform3DGroup.cs" />
+    <Compile Include="Graphics\Transform\TranslateTransform3D.cs" />
     <Compile Include="Graphics\VBO.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
