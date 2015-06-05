@@ -15,8 +15,6 @@ namespace CodeFull.Graphics
     /// </summary>
     public class Arcball
     {
-        private const float Epsilon = 1.0e-5f;
-
         /// <summary>
         /// The last set mouse cursor position
         /// </summary>
@@ -80,6 +78,47 @@ namespace CodeFull.Graphics
             buttonMapping[MouseButtons.Left] = false;
             buttonMapping[MouseButtons.Middle] = false;
             buttonMapping[MouseButtons.Right] = false;
+        }
+
+        /// <summary>
+        /// Handles the operations that need to be performed when the mouse button
+        /// is pressed.
+        /// </summary>
+        /// <param name="e">The event arguments</param>
+        public void OnMouseDown(MouseEventArgs e)
+        {
+            if (e.Button == System.Windows.Forms.MouseButtons.Left)
+            {
+                this.SetMouseButtonStatus(MouseButtons.Left, true);
+                this.SetMousePosition(e.Location);
+            }
+
+            if (e.Button == System.Windows.Forms.MouseButtons.Middle)
+            {
+                this.SetMousePosition(e.Location);
+                this.SetMouseButtonStatus(MouseButtons.Middle, true);
+            }
+
+            if (e.Button == System.Windows.Forms.MouseButtons.Right)
+            {
+                this.SetMousePosition(e.Location);
+                this.SetMouseButtonStatus(MouseButtons.Right, true);
+            }
+        }
+
+        /// <summary>
+        /// Handles the operations that need to be performed when the mouse button
+        /// is released.
+        /// </summary>
+        /// <param name="e">The event arguments</param>
+        public void OnMouseUp(MouseEventArgs e)
+        {
+            if (e.Button == System.Windows.Forms.MouseButtons.Left)
+                this.SetMouseButtonStatus(MouseButtons.Left, false);
+            if (e.Button == System.Windows.Forms.MouseButtons.Middle)
+                this.SetMouseButtonStatus(MouseButtons.Middle, false);
+            if (e.Button == System.Windows.Forms.MouseButtons.Right)
+                this.SetMouseButtonStatus(MouseButtons.Right, false);
         }
 
         /// <summary>
@@ -173,7 +212,7 @@ namespace CodeFull.Graphics
             Vector3d Perp = Vector3d.Cross(clickStartVector, clickEndVector);
 
             //Compute the length of the perpendicular vector
-            if (Perp.Length > Epsilon)
+            if (Perp.Length > double.Epsilon)
             //if its non-zero
             {
                 //We're ok, so return the perpendicular vector as the transform after all

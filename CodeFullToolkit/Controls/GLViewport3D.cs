@@ -236,21 +236,61 @@ namespace CodeFull.Controls
             if (SelectedDrawable == null)
                 return base.ProcessCmdKey(ref msg, keyData);
 
+            HandleKeyboard(keyData);
+            
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        protected override void OnMouseDown(MouseEventArgs e)
+        {
+            base.OnMouseDown(e);
+
+            // Perform picking using any mouse button
+            Pick(e.Location);
+
+            // Change arcball's mouse button status
+            arcball.OnMouseDown(e);
+        }
+
+        protected override void OnMouseUp(MouseEventArgs e)
+        {
+            base.OnMouseUp(e);
+
+            // Change arcball's mouse button status
+            arcball.OnMouseUp(e);
+        }
+
+        #endregion
+
+        //------------------------------------------------------
+        //
+        //  Event Helpers
+        //
+        //------------------------------------------------------
+
+        #region Event Helpers
+
+        /// <summary>
+        /// Handles various keyboard keypresses for object manipulation
+        /// </summary>
+        /// <param name="keyData">The key that is pressed</param>
+        protected void HandleKeyboard(Keys keyData)
+        {
             if (keyData == Keys.D)
             {
-                SelectedDrawable.Transform.RotateBy(0, 0.1, 0, SelectedDrawable.Transform.Transform(SelectedDrawable.Center));
+                SelectedDrawable.Transform.RotateBy(0, 0.1, 0, SelectedDrawable.TransformedCenter);
             }
             if (keyData == Keys.A)
             {
-                SelectedDrawable.Transform.RotateBy(0, -0.1, 0, SelectedDrawable.Transform.Transform(SelectedDrawable.Center));
+                SelectedDrawable.Transform.RotateBy(0, -0.1, 0, SelectedDrawable.TransformedCenter);
             }
             if (keyData == Keys.W)
             {
-                SelectedDrawable.Transform.RotateBy(-0.1, 0, 0, SelectedDrawable.Transform.Transform(SelectedDrawable.Center));
+                SelectedDrawable.Transform.RotateBy(-0.1, 0, 0, SelectedDrawable.TransformedCenter);
             }
             if (keyData == Keys.S)
             {
-                SelectedDrawable.Transform.RotateBy(0.1, 0, 0, SelectedDrawable.Transform.Transform(SelectedDrawable.Center));
+                SelectedDrawable.Transform.RotateBy(0.1, 0, 0, SelectedDrawable.TransformedCenter);
             }
             if (keyData == Keys.PageUp)
             {
@@ -262,12 +302,12 @@ namespace CodeFull.Controls
             }
             if (keyData == Keys.Add)
             {
-                SelectedDrawable.Transform.ScaleBy(0.1, 0.1, 0.1, SelectedDrawable.Transform.Transform(SelectedDrawable.Center));
+                SelectedDrawable.Transform.ScaleBy(0.1, 0.1, 0.1, SelectedDrawable.TransformedCenter);
             }
 
             if (keyData == Keys.Subtract)
             {
-                SelectedDrawable.Transform.ScaleBy(-0.1, -0.1, -0.1, SelectedDrawable.Transform.Transform(SelectedDrawable.Center));
+                SelectedDrawable.Transform.ScaleBy(-0.1, -0.1, -0.1, SelectedDrawable.TransformedCenter);
             }
 
             if (keyData == Keys.Left)
@@ -286,15 +326,16 @@ namespace CodeFull.Controls
             {
                 SelectedDrawable.Transform.TranslateBy(0, -0.1, 0);
             }
-            return base.ProcessCmdKey(ref msg, keyData);
         }
 
-        protected override void OnMouseDown(MouseEventArgs e)
+        /// <summary>
+        /// Performs picking and changes the SelectedDrawable property based on
+        /// the drawable that was under the mouse cursor.
+        /// </summary>
+        /// <param name="mouseLocation">The cursor location</param>
+        private void Pick(Point mouseLocation)
         {
-            base.OnMouseDown(e);
-
-            // Perform picking using any mouse button
-            Point p = GetOpenGLMouseCoordinates(e);
+            Point p = GetOpenGLMouseCoordinates(mouseLocation);
             double minDepth = int.MaxValue;
 
             foreach (var item in this.Children)
@@ -312,39 +353,10 @@ namespace CodeFull.Controls
             {
                 this.SelectionChanged(this, EventArgs.Empty);
             }
-
-            // Change arcball's mouse button status
-            if (e.Button == System.Windows.Forms.MouseButtons.Left)
-            {
-                arcball.SetMouseButtonStatus(MouseButtons.Left, true);
-                arcball.SetMousePosition(e.Location);
-            }
-
-            if (e.Button == System.Windows.Forms.MouseButtons.Middle)
-            {
-                arcball.SetMousePosition(e.Location);
-                arcball.SetMouseButtonStatus(MouseButtons.Middle, true);
-            }
-
-            if (e.Button == System.Windows.Forms.MouseButtons.Right)
-            {
-                arcball.SetMousePosition(e.Location);
-                arcball.SetMouseButtonStatus(MouseButtons.Right, true);
-            }
-        }
-
-        protected override void OnMouseUp(MouseEventArgs e)
-        {
-            base.OnMouseUp(e);
-            if (e.Button == System.Windows.Forms.MouseButtons.Left)
-                arcball.SetMouseButtonStatus(MouseButtons.Left, false);
-            if (e.Button == System.Windows.Forms.MouseButtons.Middle)
-                arcball.SetMouseButtonStatus(MouseButtons.Middle, false);
-            if (e.Button == System.Windows.Forms.MouseButtons.Right)
-                arcball.SetMouseButtonStatus(MouseButtons.Right, false);
-        }
+        } 
 
         #endregion
+
 
         /// <summary>
         /// Performs a hit test on all the children of this viewport and
@@ -381,11 +393,12 @@ namespace CodeFull.Controls
         /// <summary>
         /// Converts the mouse cursor location to OpenGL window coordinate system
         /// </summary>
-        /// <param name="e"></param>
-        /// <returns></returns>
-        public Point GetOpenGLMouseCoordinates(MouseEventArgs e)
+        /// <param name="mousePosition">The position of the mouse</param>
+        /// <returns>The point in the OpenGL window coordinate system</returns>
+        public Point GetOpenGLMouseCoordinates(Point mousePosition)
+        
         {
-            return new Point(e.X, this.Height - e.Y);
+            return new Point(mousePosition.X, this.Height - mousePosition.Y);
         }
     }
 }
