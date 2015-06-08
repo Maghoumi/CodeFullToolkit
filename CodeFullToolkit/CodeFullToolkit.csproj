@@ -54,6 +54,7 @@
     </Compile>
     <Compile Include="Graphics\Arcball.cs" />
     <Compile Include="Graphics\Drawable.cs" />
+    <Compile Include="Graphics\DrawableCollection.cs" />
     <Compile Include="Graphics\HitTestResult.cs" />
     <Compile Include="Graphics\Mesh.cs" />
     <Compile Include="Graphics\MeshVertex.cs" />

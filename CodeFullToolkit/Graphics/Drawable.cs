@@ -16,7 +16,7 @@ namespace CodeFull.Graphics
         /// <summary>
         /// Gets or sets the list of drawables attached to this CodeFull.Graphics.Drawable instance
         /// </summary>
-        public IList<Drawable> Attachments { get; set; }
+        public DrawableCollection Attachments { get; set; }
 
         /// <summary>
         /// Internally stores the centroid of this drawable
@@ -49,6 +49,16 @@ namespace CodeFull.Graphics
             get { return this.transform; }
             set { this.transform = value; }
         }
+
+        /// <summary>
+        /// The parent of this Drawable
+        /// </summary>
+        public Drawable Parent { get; set; }
+
+        /// <summary>
+        /// A method to calculate the centroid of this drawable
+        /// </summary>
+        protected abstract void CalculateCenter();
 
         /// <summary>
         /// Draws the contents of this drawable using OpenGL

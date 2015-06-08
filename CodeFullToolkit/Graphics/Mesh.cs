@@ -155,7 +155,7 @@ namespace CodeFull.Graphics
             Init();
             CalculateCenter();
 
-            this.Attachments = new List<Drawable>();
+            this.Attachments = new DrawableCollection(this);
             
             Mesh.idGen++;
             this.ID = "Mesh-" + idGen.ToString();
@@ -164,7 +164,7 @@ namespace CodeFull.Graphics
         /// <summary>
         /// Calculates the center point of this mesh
         /// </summary>
-        private void CalculateCenter()
+        protected override void CalculateCenter()
         {
             this.center = new Vector3d(0);
 
@@ -265,10 +265,7 @@ namespace CodeFull.Graphics
             GL.PopMatrix();
 
             foreach (var attachment in this.Attachments)
-            {
-                attachment.Transform = this.Transform;
                 attachment.Draw();
-            }
         }
 
         /// <summary>
