@@ -21,11 +21,6 @@ namespace CodeFull.Graphics
         public int colorId;
 
         /// <summary>
-        /// The color selection buffer handle
-        /// </summary>
-        public int selectColorId;
-
-        /// <summary>
         /// The face arrays handle
         /// </summary>
         public int faceId;

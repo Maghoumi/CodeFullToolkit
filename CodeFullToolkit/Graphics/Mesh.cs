@@ -8,6 +8,9 @@ using System.Text;
 using OpenTK.Graphics.OpenGL;
 using System.IO;
 using System.Threading.Tasks;
+using CodeFull.Graphics.Geometry;
+using System.Diagnostics;
+using CodeFull.Extensions;
 
 namespace CodeFull.Graphics
 {
@@ -55,14 +58,9 @@ namespace CodeFull.Graphics
         public bool HasColor { get; private set; }
 
         /// <summary>
-        /// The ID of each triangle in terms of colors (hack for picking)
-        /// </summary>
-        private uint[] selectColors;
-
-        /// <summary>
         /// A lookup table for mapping face ID to triangle vertices
         /// </summary>
-        private Dictionary<uint, List<Vector3d>> revLookup = new Dictionary<uint, List<Vector3d>>();
+        private Dictionary<uint, Triangle> revLookup = new Dictionary<uint, Triangle>();
 
         /// <summary>
         /// The triangle indices of this mesh
@@ -88,6 +86,11 @@ namespace CodeFull.Graphics
         public string ID { get; set; }
 
         /// <summary>
+        /// Gets the collection of all the triangles of this Mesh.
+        /// </summary>
+        public TriangleCollection Triangles { get; protected set; }
+
+        /// <summary>
         /// Calculates the array of vertices of this mesh after applying
         /// the transforms applied to this mesh.
         /// </summary>
@@ -106,6 +109,21 @@ namespace CodeFull.Graphics
             return result;
         }
 
+        ///// <summary>
+        ///// Creates a list of the Triangles of this mesh.
+        ///// </summary>
+        //protected void CreateTriangleList()
+        //{
+        //    IList<Triangle> result = new List<Triangle>();
+
+        //    for (int i = 0; i < this.triangleIndices.Length; i+=3)
+        //        result.Add(new Triangle(this.vertices[this.triangleIndices[i]],
+        //            this.vertices[this.triangleIndices[i + 1]],
+        //            this.vertices[this.triangleIndices[i + 2]]));
+
+        //    this.Triangles = result;
+        //}
+
         /// <summary>
         /// Initializes a new mesh.
         /// </summary>
@@ -116,6 +134,7 @@ namespace CodeFull.Graphics
         {
             this.vertices = vertices;
             this.triangleIndices = triangleIndices;
+            this.Triangles = new TriangleCollection(vertices, triangleIndices);
 
             if (colors != null) 
             {
@@ -134,31 +153,22 @@ namespace CodeFull.Graphics
                     this.colors[i] = grayCode;
             }
 
-            // Fill in color codes for selection;
-            this.selectColors = new uint[vertices.Length];
-
-            int triangleCounter = -1;
-
-            for (int i = 0; i < vertices.Length; i++)
-            {
-                // Index
-                if (i % 3 == 0)
-                    triangleCounter++;
-
-                if (!revLookup.ContainsKey((uint)triangleCounter))
-                    revLookup[(uint)triangleCounter] = new List<Vector3d>();
-
-                this.selectColors[i] = (uint)triangleCounter;
-                revLookup[(uint)triangleCounter].Add(this.vertices[i]);
-            }
-
             Init();
             CalculateCenter();
 
             this.Attachments = new DrawableCollection(this);
+            ComputeAABB();
             
             Mesh.idGen++;
             this.ID = "Mesh-" + idGen.ToString();
+        }
+
+        /// <summary>
+        /// Computes the axis-aligned bounding box of this mesh.
+        /// </summary>
+        protected void ComputeAABB()
+        {
+            this.AABB = new AABB(this, Helpers.GetMinVector3d(this.vertices), Helpers.GetMaxVector3d(this.vertices));
         }
 
         /// <summary>
@@ -193,8 +203,7 @@ namespace CodeFull.Graphics
             GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize, out size);
             if (vertices.Length * BlittableValueType.StrideOf(vertices) != size)
                 throw new ApplicationException("Vertex data not uploaded correctly");
-
-
+            
             if (this.colors != null)
             {
                 GL.GenBuffers(1, out handle.colorId);
@@ -205,23 +214,13 @@ namespace CodeFull.Graphics
                     throw new ApplicationException("Color data not uploaded correctly"); 
             }
 
-            if (this.selectColors != null)
-            {
-                GL.GenBuffers(1, out handle.selectColorId);
-                GL.BindBuffer(BufferTarget.ArrayBuffer, handle.selectColorId);
-                GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(selectColors.Length * BlittableValueType.StrideOf(selectColors)), selectColors, BufferUsageHint.StaticDraw);
-                GL.GetBufferParameter(BufferTarget.ArrayBuffer, BufferParameterName.BufferSize, out size);
-                if (selectColors.Length * BlittableValueType.StrideOf(selectColors) != size)
-                    throw new ApplicationException("Color data not uploaded correctly");
-
-                GL.GenBuffers(1, out handle.faceId);
-                GL.BindBuffer(BufferTarget.ElementArrayBuffer, handle.faceId);
-                GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(triangleIndices.Length * sizeof(int)), triangleIndices,
-                              BufferUsageHint.StaticDraw);
-                GL.GetBufferParameter(BufferTarget.ElementArrayBuffer, BufferParameterName.BufferSize, out size);
-                if (triangleIndices.Length * sizeof(int) != size)
-                    throw new ApplicationException("Element data not uploaded correctly"); 
-            }
+            GL.GenBuffers(1, out handle.faceId);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, handle.faceId);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(triangleIndices.Length * sizeof(int)), triangleIndices,
+                          BufferUsageHint.StaticDraw);
+            GL.GetBufferParameter(BufferTarget.ElementArrayBuffer, BufferParameterName.BufferSize, out size);
+            if (triangleIndices.Length * sizeof(int) != size)
+                throw new ApplicationException("Element data not uploaded correctly"); 
 
             handle.numElements = triangleIndices.Length;
         }
@@ -266,84 +265,60 @@ namespace CodeFull.Graphics
 
             foreach (var attachment in this.Attachments)
                 attachment.Draw();
+
+            if (ShowAABB) 
+                this.AABB.Draw();
         }
 
         /// <summary>
-        /// Performs a ray casting hit test using the specified points. The points 
-        /// must be specified in OpenGL window coordinate system. (Bottom left is the origin)
+        /// Performs a ray casting hit test using the specified ray. This function does not
+        /// take the ray into its own space! Thus make sure the ray is specified in the space of this
+        /// object (with proper transforms applied to it).
         /// </summary>
-        /// <param name="hitPoints">The points to perform hittest for</param>
-        /// <returns>A set containing the vertices that form the triangle that the intersects with the points</returns>
-        public override HitTestResult HitTest(IEnumerable<Point> hitPoints)
+        /// <param name="ray">The ray to perform hit test for</param>
+        /// <returns>The result of the hit test if anything occurred. null otherwise.</returns>
+        public override HitTestResult HitTest(Ray ray)
         {
-            // Temporarily change the background color to white
-            GL.ClearColor(Color.White);
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-            GL.EnableClientState(ArrayCap.ColorArray);
-            GL.EnableClientState(ArrayCap.VertexArray);
+            // First determine if the ray hits the AABB
+            if (this.AABB.HitTest(ray) == null)
+                return null;
 
-            // Handle the transforms applied to this object
-            GL.PushMatrix();
-            Matrix4d transform = this.Transform.Value;
-            GL.MultMatrix(ref transform);
+            System.Collections.Concurrent.ConcurrentBag<MeshHitTestResult> hits = new System.Collections.Concurrent.ConcurrentBag<MeshHitTestResult>();
 
-            // Bind the vertex array
-            GL.BindBuffer(BufferTarget.ArrayBuffer, handle.vertexId);
-            GL.VertexPointer(3, VertexPointerType.Double, BlittableValueType.StrideOf(vertices), IntPtr.Zero);
-
-
-            if (this.selectColors != null)
+            Parallel.ForEach(Triangles, item =>
             {
-                // Bind the select color array
-                GL.BindBuffer(BufferTarget.ArrayBuffer, handle.selectColorId);
-                GL.ColorPointer(4, ColorPointerType.UnsignedByte, BlittableValueType.StrideOf(selectColors), IntPtr.Zero); 
-            }
+                Vector3d? intersection = item.IntersectsWith(ray);
 
-            // Bind the elements array
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, handle.faceId);
-            GL.DrawElements(PrimitiveType.Triangles, handle.numElements, DrawElementsType.UnsignedInt, IntPtr.Zero);
-
-            HashSet<Vector3d> hits = new HashSet<Vector3d>();
-            float dist = 0;
-
-            uint selectedTriangle = new uint();
-
-            foreach (var item in hitPoints)
-            {
-                GL.ReadPixels(item.X, item.Y, 1, 1, PixelFormat.Rgba, PixelType.UnsignedByte, ref selectedTriangle);
-
-                if (selectedTriangle != uint.MaxValue)
+                if (intersection != null)
                 {
-                    foreach (var x in revLookup[selectedTriangle])
-                        hits.Add(x);
+                    hits.Add(new MeshHitTestResult(this, Transform.Transform(intersection.Value), item));
+                }
+            });
 
-                    float z = 0;
-                    GL.ReadPixels(item.X, item.Y, 1, 1, PixelFormat.DepthComponent, PixelType.Float, ref z);
-                    dist += z;
+            double minDist = int.MaxValue;
+            Vector3d bestHit = Vector3d.Zero;
+            Triangle triHit = null;
+            Vector3d cameraPoistion = Camera.MainCamera.Position;
+
+            foreach (var item in hits)
+            {
+                if (item == null)
+                    continue;
+
+                double dist = (cameraPoistion - item.HitPoint).LengthSquared;
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    bestHit = Vector3d.Transform(item.HitPoint, Transform.Value.Inverted());
+                    triHit = item.TriangleHit;
                 }
             }
 
-            GL.PopMatrix();
+            // If nothing was hit
+            if (triHit == null)
+                return null;
 
-            dist /= hits.Count;
-
-            return new HitTestResult(this, hits, dist);
-        }
-
-        /// <summary>
-        /// Determines whether the specified screen point lies on the mesh. If so, the distance will
-        /// be returned. If not, null will be returned.
-        /// </summary>
-        /// <param name="screenPoint">The point on the screen (in OpenGL window coordinates)</param>
-        /// <returns>The dept of the hit if the point lies on the mesh, null otherwise</returns>
-        public double? GetIntersectionDistance(Point screenPoint)
-        {
-            var hit = this.HitTest(new Point[] { screenPoint });
-
-            if (hit.Count > 0)
-                return hit.ZDistance;
-
-            return null;
+            return new MeshHitTestResult(this, bestHit, triHit);
         }
 
         /// <summary>

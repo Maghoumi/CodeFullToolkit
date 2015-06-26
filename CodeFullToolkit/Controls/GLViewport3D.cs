@@ -8,6 +8,9 @@ using OpenTK.Graphics.OpenGL;
 using CodeFull.Graphics;
 using System.Windows.Forms;
 using System.ComponentModel;
+using CodeFull.Graphics.Geometry;
+using System.Diagnostics;
+using CodeFull.Extensions;
 
 namespace CodeFull.Controls
 {
@@ -24,28 +27,15 @@ namespace CodeFull.Controls
         protected Arcball arcball;
 
         /// <summary>
-        /// The position of the camera in this viewport
+        /// The viewport's camera
+        /// (defaults:      Position:    0, 0, 5
+        ///                 LookAt:      0, 0, 0
+        ///                 Up:          0, 1, 0
+        ///                 FieldOfView: 45)
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Vector3d CameraPosition { get; set; }
-
-        /// <summary>
-        /// The point that the camera must look at
-        /// </summary>
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Vector3d CameraLookAt { get; set; }
-
-        /// <summary>
-        /// The up vector of the camera (default = (0, 1, 0))
-        /// </summary>
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Vector3d CameraUp { get; set; }
-
-        /// <summary>
-        /// Gets or sets the camera's field of view (default value = 45)
-        /// </summary>
-        public double FieldOfView { get; set; }
-
+        public Camera Camera { get; set; }
+        
         /// <summary>
         /// Gets or sets the arcball sensitivity for manipulating drawables in this viewport
         /// </summary>
@@ -61,16 +51,6 @@ namespace CodeFull.Controls
                     this.arcball.Sensitivity = value;
             }
         }
-
-        /// <summary>
-        /// Camera's near clipping distance (default = 0.1)
-        /// </summary>
-        public double NearClipping { get; set; }
-
-        /// <summary>
-        /// Camera's far clipping distance (default = 64)
-        /// </summary>
-        public double FarClipping { get; set; }
 
         /// <summary>
         /// The clear color used as the background of this OpenGL control
@@ -96,19 +76,14 @@ namespace CodeFull.Controls
         public event EventHandler SelectionChanged;
 
         public GLViewport3D()
-            : base()
+            : base(new OpenTK.Graphics.GraphicsMode(OpenTK.Graphics.GraphicsMode.Default.ColorFormat, OpenTK.Graphics.GraphicsMode.Default.Depth, OpenTK.Graphics.GraphicsMode.Default.Stencil, 8))
         {
             InitializeComponent();
 
             arcball = new Arcball(Width, Height, 0.01);
             this.ClearColor = Color.White;
-            this.CameraPosition = new Vector3d(0, 0, 5);
-            this.CameraLookAt = new Vector3d(0, 0, 0);
-            this.CameraUp = new Vector3d(0, 1, 0);
+            this.Camera = new Camera() { Position = new Vector3d(0, 0, 5)};
             this.Children = new List<Drawable>();
-            this.FieldOfView = 45;
-            this.NearClipping = 0.1;
-            this.FarClipping = 64;
             Application.Idle += Application_Idle;
         }
 
@@ -131,29 +106,23 @@ namespace CodeFull.Controls
         }
 
         /// <summary>
-        /// Gets the model view matrix based on the viewport setup
+        /// Creates the projection matrix based on the control setup.
         /// </summary>
-        /// <returns>The model view matrix</returns>
-        protected Matrix4d GetModelViewMatrix()
+        /// <returns>The projection matrix</returns>
+        protected Matrix4d CreateProjectionMatrix()
         {
-            return Matrix4d.LookAt(CameraPosition, CameraLookAt, CameraUp);
+            float aspect_ratio = this.ClientSize.Width / (float)this.ClientSize.Height;
+            return Matrix4d.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(Camera.FieldOfView), aspect_ratio, (float)Camera.NearClip, (float)Camera.FarClip);
         }
 
         /// <summary>
-        /// Gets the projection matrix based on the control setup
+        /// Is called when it is time to render the objects in this viewport.
         /// </summary>
-        /// <returns>The projection matrix</returns>
-        protected Matrix4d GetProjectionMatrix()
+        protected void Render()
         {
-            float aspect_ratio = this.ClientSize.Width / (float)this.ClientSize.Height;
-            return Matrix4d.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(this.FieldOfView), aspect_ratio, (float)NearClipping, (float)FarClipping);
-        }
-
-        private void Render()
-        {
-			if (DesignMode)
+            if (DesignMode)
                 return;
-			
+
             // Apply arcball transforms to the selected drawable
             var cursor = OpenTK.Input.Mouse.GetCursorState();
             Point cursorPos = PointToClient(new Point(cursor.X, cursor.Y));
@@ -169,16 +138,16 @@ namespace CodeFull.Controls
 
             // Setup viewport and projection matrix
             GL.Viewport(0, 0, this.ClientSize.Width, this.ClientSize.Height);
-            Matrix4d perpective = GetProjectionMatrix();
+            Matrix4d perpective = CreateProjectionMatrix();
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadMatrix(ref perpective);
 
             // Setup camera
-            Matrix4d modelView = GetModelViewMatrix();
+            Matrix4d modelView = Camera.CreateModelViewMatrix();
             GL.MatrixMode(MatrixMode.Modelview);
             GL.LoadMatrix(ref modelView);
 
-            
+
 
             foreach (var child in Children)
                 child.Draw();
@@ -233,11 +202,11 @@ namespace CodeFull.Controls
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            if (SelectedDrawable == null)
-                return base.ProcessCmdKey(ref msg, keyData);
+            //if (SelectedDrawable == null)
+            //    return base.ProcessCmdKey(ref msg, keyData);
 
             HandleKeyboard(keyData);
-            
+
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
@@ -327,25 +296,40 @@ namespace CodeFull.Controls
                 SelectedDrawable.Transform.TranslateBy(0, -0.1, 0);
             }
         }
+        #endregion
 
         /// <summary>
         /// Performs picking and changes the SelectedDrawable property based on
         /// the drawable that was under the mouse cursor.
         /// </summary>
         /// <param name="mouseLocation">The cursor location</param>
-        private void Pick(Point mouseLocation)
+        protected void Pick(Point mouseLocation)
         {
-            Point p = GetOpenGLMouseCoordinates(mouseLocation);
+            // If depth is 1, means do not do hit test (nothing under the cursor).
+            if (Helpers.GetDepth(mouseLocation) == 1)
+                return;
+
+            Ray ray = Helpers.ScreenPointToRay(mouseLocation);
+
             double minDepth = int.MaxValue;
 
-            foreach (var item in this.Children)
+            foreach (var drawable in this.Children)
             {
-                var hitResult = item.HitTest(p);
-                // If hit anything, selected drawable is the one closest to the camera
-                if (hitResult.Count > 0 && hitResult.ZDistance < minDepth)
+                Mesh m = drawable as Mesh;
+
+                if (m != null)
                 {
-                    minDepth = hitResult.ZDistance;
-                    arcball.Drawable = SelectedDrawable = hitResult.Drawable;
+                    var res = m.HitTest(ray.ToObjectSpace(drawable));
+                    if (res == null)
+                        continue;
+
+                    // Select the point closest to the main camera.
+                    double dist = Camera.MainCamera.GetDistanceTo(res.HitPoint);
+                    if (dist < minDepth)
+                    {
+                        minDepth = dist;
+                        arcball.Drawable = SelectedDrawable = res.Drawable;
+                    }
                 }
             }
 
@@ -353,52 +337,8 @@ namespace CodeFull.Controls
             {
                 this.SelectionChanged(this, EventArgs.Empty);
             }
-        } 
 
-        #endregion
-
-
-        /// <summary>
-        /// Performs a hit test on all the children of this viewport and
-        /// returns a set of hit points
-        /// </summary>
-        /// <param name="points">A collection of points to use in hit testing</param>
-        /// <returns>A set of triangle coordinates that intersect with the ray</returns>
-        public HashSet<Vector3d> HitTest(IEnumerable<Point> points)
-        {
-            HashSet<Vector3d> result = new HashSet<Vector3d>();
-
-            foreach (var item in Children)
-            {
-                var hits = item.HitTest(points);
-
-                foreach (var hit in hits)
-                    result.Add(hit);
-            }
-
-            return result;
-        }
-
-        /// <summary>
-        /// Performs a hit test on the specified child and returns the result
-        /// </summary>
-        /// <param name="points">A collection of points to use in hit testing</param>
-        /// <param name="drawable">The drawable to perform hit test on</param>
-        /// <returns>The hit test result</returns>
-        public HitTestResult HitTest(IEnumerable<Point> points, Drawable drawable)
-        {
-            return drawable.HitTest(points);
-        }
-
-        /// <summary>
-        /// Converts the mouse cursor location to OpenGL window coordinate system
-        /// </summary>
-        /// <param name="mousePosition">The position of the mouse</param>
-        /// <returns>The point in the OpenGL window coordinate system</returns>
-        public Point GetOpenGLMouseCoordinates(Point mousePosition)
-        
-        {
-            return new Point(mousePosition.X, this.Height - mousePosition.Y);
+            return;
         }
     }
 }

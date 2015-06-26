@@ -24,26 +24,23 @@ namespace CodeFull.Graphics
 
         protected void ApplyTransform(Drawable item)
         {
-            //Matrix4d itemTransform = item.Transform.Value;
-            //Transform3DGroup allTrans = new Transform3DGroup();
-            //foreach (var t in this.owner.Transform.Children)
-            //    allTrans.Children.Add(t);
-
-            //foreach (var t in item.Transform.Children)
-            //    allTrans.Children.Add(t);
-
-            //item.Transform = allTrans;
-
             // TODO keep the objects transforms and append the parent's
-
             item.Transform = this.owner.Transform;
         }
 
+        /// <summary>
+        /// Creates a new DrawableCollection instance using the specified drawable as the owner.
+        /// </summary>
+        /// <param name="owner">The ownder of this drawable.</param>
         public DrawableCollection(Drawable owner)
         {
             this.owner = owner;
         }
 
+        /// <summary>
+        /// Add a new Drawable to this collection.
+        /// </summary>
+        /// <param name="item">The Drawable instance to add.</param>
         public void Add(Drawable item)
         {
             this.collection.Add(item);
@@ -51,6 +48,9 @@ namespace CodeFull.Graphics
             ApplyTransform(item);
         }
 
+        /// <summary>
+        /// Clear this collection.
+        /// </summary>
         public void Clear()
         {
             foreach (var item in collection)
@@ -59,32 +59,57 @@ namespace CodeFull.Graphics
             this.collection.Clear();
         }
 
+        /// <summary>
+        /// Determines whether the specified Drawable instance exists in this
+        /// DrawableCollection.
+        /// </summary>
+        /// <param name="item">The Drawable instance to look for.</param>
+        /// <returns>true if the collection contains the specified Drawable. false otherwise.</returns>
         public bool Contains(Drawable item)
         {
             return this.collection.Contains(item);
         }
-
+        /// <summary>
+        /// Copies the entire collection to a compatible one-dimensional Array, starting at the specified index of the target array.
+        /// </summary>
+        /// <param name="array"></param>
+        /// <param name="arrayIndex"></param>
         public void CopyTo(Drawable[] array, int arrayIndex)
         {
             this.collection.CopyTo(array, arrayIndex);
         }
 
+        /// <summary>
+        /// Gets the number of Drawables in this collection.
+        /// </summary>
         public int Count
         {
             get { return this.collection.Count; }
         }
 
+        /// <summary>
+        /// Gets the value determining whether this collection is read only or not.
+        /// </summary>
         public bool IsReadOnly
         {
             get { return this.collection.IsReadOnly; }
         }
 
+        /// <summary>
+        /// Removes the specified item from this collection (if it exists).
+        /// </summary>
+        /// <param name="item">The Drawable to remove.</param>
+        /// <returns>true if the specified Drawable existed and was removed. false otherwise.</returns>
         public bool Remove(Drawable item)
         {
             item.Parent = null;
             return this.collection.Remove(item);
         }
 
+        /// <summary>
+        /// Gets the enumerator of this collection.
+        /// </summary>
+        /// <returns>This collections enumerator.</returns>
         public IEnumerator<Drawable> GetEnumerator()
         {
             return this.collection.GetEnumerator();
@@ -95,11 +120,21 @@ namespace CodeFull.Graphics
             return this.collection.GetEnumerator();
         }
 
+        /// <summary>
+        /// Determines the index of the specified Drawable in this collection.
+        /// </summary>
+        /// <param name="item">The Drawable.</param>
+        /// <returns>The index of the Drawable if it exists in this collection. -1 otherwise.</returns>
         public int IndexOf(Drawable item)
         {
             return this.collection.IndexOf(item);
         }
 
+        /// <summary>
+        /// Inserts the speicfied Drawable at the specified index in this collection.
+        /// </summary>
+        /// <param name="index">The place to insert the Drawable.</param>
+        /// <param name="item">The Drawable to insert.</param>
         public void Insert(int index, Drawable item)
         {
             this.collection.Insert(index, item);
@@ -107,6 +142,10 @@ namespace CodeFull.Graphics
             ApplyTransform(item);
         }
 
+        /// <summary>
+        /// Removes the Drawable instance at the specified index.
+        /// </summary>
+        /// <param name="index">The index of the Drawable to remove.</param>
         public void RemoveAt(int index)
         {
             try
@@ -118,6 +157,11 @@ namespace CodeFull.Graphics
             this.collection.RemoveAt(index);
         }
 
+        /// <summary>
+        /// Gets or sets the Drawbale at the specified index in this collection.
+        /// </summary>
+        /// <param name="index">The access index.</param>
+        /// <returns>The Drawable at the specified index.</returns>
         public Drawable this[int index]
         {
             get

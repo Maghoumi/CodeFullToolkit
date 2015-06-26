@@ -103,11 +103,8 @@
             this.viewport.BackColor = System.Drawing.Color.Black;
             this.viewport.ClearColor = System.Drawing.Color.White;
             this.viewport.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.viewport.FarClipping = 64D;
-            this.viewport.FieldOfView = 45D;
             this.viewport.Location = new System.Drawing.Point(3, 16);
             this.viewport.Name = "viewport";
-            this.viewport.NearClipping = 0.1D;
             this.viewport.Size = new System.Drawing.Size(633, 518);
             this.viewport.TabIndex = 0;
             this.viewport.VSync = false;

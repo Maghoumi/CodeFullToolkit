@@ -52,12 +52,18 @@
     <Compile Include="Controls\GLViewport3D.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="Extensions\Extensions.cs" />
+    <Compile Include="Extensions\Helpers.cs" />
+    <Compile Include="Graphics\AABB.cs" />
     <Compile Include="Graphics\Arcball.cs" />
+    <Compile Include="Graphics\Camera.cs" />
     <Compile Include="Graphics\Drawable.cs" />
     <Compile Include="Graphics\DrawableCollection.cs" />
+    <Compile Include="Graphics\Geometry\Ray.cs" />
+    <Compile Include="Graphics\Geometry\Triangle.cs" />
     <Compile Include="Graphics\HitTestResult.cs" />
     <Compile Include="Graphics\Mesh.cs" />
-    <Compile Include="Graphics\MeshVertex.cs" />
+    <Compile Include="Graphics\MeshHitTestResult.cs" />
     <Compile Include="Graphics\Transform\EulerRotateTransform3D.cs" />
     <Compile Include="Graphics\Transform\MatrixTransform3D.cs" />
     <Compile Include="Graphics\Transform\QuaternionRotateTransform3D.cs" />
@@ -65,6 +71,7 @@
     <Compile Include="Graphics\Transform\Transform3D.cs" />
     <Compile Include="Graphics\Transform\Transform3DGroup.cs" />
     <Compile Include="Graphics\Transform\TranslateTransform3D.cs" />
+    <Compile Include="Graphics\TriangleCollection.cs" />
     <Compile Include="Graphics\VBO.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
