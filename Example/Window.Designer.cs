@@ -1,4 +1,5 @@
-﻿namespace Example
+﻿using CodeFull.Controls;
+namespace Example
 {
     partial class Window
     {
@@ -108,7 +109,7 @@
             this.viewport.Size = new System.Drawing.Size(633, 518);
             this.viewport.TabIndex = 0;
             this.viewport.VSync = false;
-            this.viewport.SelectionChanged += new System.EventHandler(this.viewport_SelectionChanged);
+            this.viewport.SelectedDrawableChanged += new SelectedDrawableChangedEventHandler(this.viewport_SelectionChanged);
             // 
             // btnSave
             // 

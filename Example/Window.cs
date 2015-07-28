@@ -1,4 +1,6 @@
-﻿using CodeFull.Graphics;
+﻿using CodeFull.Controls;
+using CodeFull.Graphics;
+using CodeFull.Graphics3D;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -57,7 +59,7 @@ namespace Example
             }
         }
 
-        private void viewport_SelectionChanged(object sender, EventArgs e)
+        private void viewport_SelectionChanged(object sender, SelectedDrawableChangedEventArgs e)
         {
             if (null != viewport.SelectedDrawable)
                 this.lstMeshes.SelectedItem = viewport.SelectedDrawable;

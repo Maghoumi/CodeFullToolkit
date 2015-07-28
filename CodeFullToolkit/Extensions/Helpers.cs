@@ -5,19 +5,77 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Text;
+using System.Runtime.InteropServices;
 
 namespace CodeFull.Extensions
 {
+    /// <summary>
+    /// The sources of the input event that is raised and is generally
+    /// recognized as mouse events.
+    /// </summary>
+    public enum MouseEventSource
+    {
+        /// <summary>
+        /// Events raised by the mouse
+        /// </summary>
+        Mouse,
+
+        /// <summary>
+        /// Events raised by a stylus
+        /// </summary>
+        Stylus,
+
+        /// <summary>
+        /// Events raised by touching the screen
+        /// </summary>
+        Touch
+    }
+
     /// <summary>
     /// Provides various helper methods.
     /// </summary>
     public class Helpers
     {
+        #region Windows API declerations
+
+        /// <summary>
+        /// Gets the extra information for the mouse event.
+        /// </summary>
+        /// <returns>The extra information provided by Windows API</returns>
+        [DllImport("user32.dll")]
+        private static extern uint GetMessageExtraInfo();
+
+        #endregion
+
+        /// <summary>
+        /// Small epsilon value
+        /// </summary>
+        public const double EPSILON = 1e-6;
+
         /// <summary>
         /// Jan, 1st, 1970 timestamp
         /// </summary>
-        private static readonly DateTime Jan1st1970 = new DateTime (1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        private static readonly DateTime Jan1st1970 = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        /// <summary>
+        /// Determines what input device triggered the last mouse event.
+        /// (Source: https://msdn.microsoft.com/en-us/library/ms703320.aspx)
+        /// </summary>
+        /// <returns>
+        /// A result indicating whether the last mouse event was triggered
+        /// by a touch, pen or the mouse.
+        /// </returns>
+        public static MouseEventSource GetMouseEventSource()
+        {
+            uint extra = GetMessageExtraInfo();
+            bool isTouchOrPen = ((extra & 0xFFFFFF00) == 0xFF515700);
+            
+            if (!isTouchOrPen)
+                return MouseEventSource.Mouse;
+            
+            bool isTouch = ((extra & 0x00000080) == 0x00000080);
+            return isTouch ? MouseEventSource.Touch : MouseEventSource.Stylus;
+        } 
 
         /// <summary>
         /// Computes the timestamp based on the number of milliseconds passed
@@ -38,7 +96,7 @@ namespace CodeFull.Extensions
         /// <returns>The corresponding 3D point on the screen</returns>
         public static Vector3d UnProject(Point screenLocation, double depth)
         {
-            int[] viewport = GetViewport();
+            int[] viewport = GetViewportArray();
             Vector4d pos = new Vector4d();
 
             // Map x and y from window coordinates, map to range -1 to 1 
@@ -54,15 +112,46 @@ namespace CodeFull.Extensions
         }
 
         /// <summary>
+        /// Converts the specified screen point (in window coordinates -- origin at top left)
+        /// to a world point in the OpenGL space.
+        /// </summary>
+        /// <param name="screenPoint">The screen point in the window coordinates</param>
+        /// <param name="worldPoint">(output) The corresponding world point.</param>
+        /// <returns>The depth of the screen point in the range [0, 1]</returns>
+        public static double ScreenToWorldPoint(Point screenPoint, out Vector3d worldPoint)
+        {
+            float mouseX = screenPoint.X;
+            float mouseY = GetViewportArray()[3] - screenPoint.Y;
+            float depth = 0;
+            GL.ReadPixels((int)mouseX, (int)mouseY, 1, 1, PixelFormat.DepthComponent, PixelType.Float, ref depth);
+
+            worldPoint = Helpers.UnProject(screenPoint, depth);
+
+            return depth;
+        }
+
+        /// <summary>
+        /// Converts the specified screen point (in window coordinates -- origin at top left)
+        /// to a world point in the OpenGL space.
+        /// </summary>
+        /// <param name="screenPoint">The screen point in the window coordinates</param>
+        /// <param name="worldPoint">(output) The corresponding world point.</param>
+        /// <returns>The depth of the screen point in the range [0, 1]</returns>
+        public static double ScreenToWorldPoint(Vector2d screenPoint, out Vector3d worldPoint)
+        {
+            return ScreenToWorldPoint(new Point((int)screenPoint.X, (int)screenPoint.Y), out worldPoint);
+        }
+
+        /// <summary>
         /// Constructs a Matrix4d matrix from the given array of doubles.
         /// </summary>
         /// <param name="array">The array of consecutive elements.</param>
         /// <returns>The corresponding Matrix4d instance.</returns>
         public static Matrix4d Matrix4dFromArray(double[] array)
         {
-            return new Matrix4d(array[0], array[1], array[2], array[3], 
-                                array[4], array[5], array[6], array[7], 
-                                array[8], array[9], array[10], array[11], 
+            return new Matrix4d(array[0], array[1], array[2], array[3],
+                                array[4], array[5], array[6], array[7],
+                                array[8], array[9], array[10], array[11],
                                 array[12], array[13], array[14], array[15]);
         }
 
@@ -70,12 +159,24 @@ namespace CodeFull.Extensions
         /// Obtains the OpenGL viewport array.
         /// </summary>
         /// <returns>The OpenGL viewport array.</returns>
-        public static int[] GetViewport()
+        public static int[] GetViewportArray()
         {
             int[] viewport = new int[4];
             OpenTK.Graphics.OpenGL.GL.GetInteger(OpenTK.Graphics.OpenGL.GetPName.Viewport, viewport);
 
             return viewport;
+        }
+
+        /// <summary>
+        /// Obtains the OpenGL viewport rectangle.
+        /// </summary>
+        /// <returns>
+        /// The rectangle with the same location and size as the one currently setup on OpenGL.
+        /// </returns>
+        public static Rectangle GetViewport()
+        {
+            int[] array = GetViewportArray();
+            return new Rectangle(array[0], array[1], array[2], array[3]);
         }
 
         /// <summary>
@@ -116,6 +217,17 @@ namespace CodeFull.Extensions
         }
 
         /// <summary>
+        /// Converts the provided screen point to ray. The screen point should be
+        /// in window coordinate system (origin at top left).
+        /// </summary>
+        /// <param name="screenPoint">The screen point</param>
+        /// <returns>The corresponding ray of the screenpoint</returns>
+        public static Ray ScreenPointToRay(Vector2d screenPoint)
+        {
+            return ScreenPointToRay(new Point((int)screenPoint.X, (int)screenPoint.Y));
+        }
+
+        /// <summary>
         /// Converts the specified mouse position from the window coordinate system to
         /// OpenGL window coordinate system (from origin at top left to origin at bottom left).
         /// </summary>
@@ -123,7 +235,7 @@ namespace CodeFull.Extensions
         /// <returns>The position in OpenGL window coordinate system.</returns>
         public static Point GetGLMouseCoordinates(Point mousePosition)
         {
-            return new Point(mousePosition.X, GetViewport()[3] - mousePosition.Y);
+            return new Point(mousePosition.X, GetViewportArray()[3] - mousePosition.Y);
         }
 
         /// <summary>
@@ -206,6 +318,21 @@ namespace CodeFull.Extensions
         }
 
         /// <summary>
+        /// Determines the centroid Vector3d in a collection of vertices
+        /// </summary>
+        /// <param name="collection">The vertex collection</param>
+        /// <returns>The centroid vector in the vertices</returns>
+        public static Vector3d GetCentroidVector3d(IEnumerable<Vector3d> collection)
+        {
+            Vector3d result = Vector3d.Zero;
+
+            foreach (var item in collection)
+                result += item;
+
+            return result / collection.Count();
+        }
+
+        /// <summary>
         /// Determines the maximum Vector3d in a collection of vertices
         /// </summary>
         /// <param name="collection">The vertex collection</param>
@@ -225,6 +352,107 @@ namespace CodeFull.Extensions
             }
 
             return new Vector3d(maxX, maxY, maxZ);
+        }
+
+        /// <summary>
+        /// Finds 3 points in the provided list that are not collinear and will
+        /// return a list containing those 3 points. If no non-collinear points
+        /// were found, null will be returned.
+        /// </summary>
+        /// <param name="list">A list of points</param>
+        /// <returns>
+        /// A list of 3 non-collinear points or null (of no non-collinear points were found.
+        /// </returns>
+        public static IList<Vector3d> FindNonCollinearPoints(IEnumerable<Vector3d> list)
+        {
+            int count = list.Count();
+
+            if (count < 3)
+                return null;
+
+            Vector3d first = list.First();
+            Vector3d second = list.ElementAt(1);
+
+            // First check the last point
+            Vector3d last = list.Last();
+
+            if (!AreCollinear(first, second, last))
+                return new List<Vector3d> { first, second, last };
+
+            for (int i = 2; i < count - 1; i++)
+            {
+                Vector3d point = list.ElementAt(i);
+
+                if (!AreCollinear(first, second, point))
+                    return new List<Vector3d> { first, second, point };
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Determines whether 3 points are collinear.
+        /// </summary>
+        /// <param name="a">The first point.</param>
+        /// <param name="b">The second point.</param>
+        /// <param name="c">The third point.</param>
+        /// <returns>
+        /// True if the points are collinear, false otherwise.
+        /// </returns>
+        public static bool AreCollinear(Vector3d a, Vector3d b, Vector3d c)
+        {
+            Vector3d vec1 = b - a;
+            Vector3d vec2 = c - a;
+
+            return vec1.Cross(vec2).LengthSquared <= EPSILON;
+        }
+
+        /// <summary>
+        /// Finds the two points with the maximum distance to each other in the
+        /// specified list of points. In other words, will find the diagonal of a 
+        /// polygon that is defined by the specified list.
+        /// </summary>
+        /// <param name="list">The list of points.</param>
+        /// <returns>
+        /// A pair of two points which are farthest from each other.
+        /// </returns>
+        public static Tuple<Vector3d, Vector3d> FindFarthestPoints(IEnumerable<Vector3d> list)
+        {
+            int count = list.Count();
+
+            switch (count)
+            {
+                case 0:
+                case 1:
+                    return null;
+                case 2:
+                    var point = list.First();
+                    return new Tuple<Vector3d, Vector3d>(point, point);
+            }
+
+            double maxDistance = int.MinValue;
+            Vector3d a = Vector3d.Zero;
+            Vector3d b = Vector3d.Zero;
+
+            for (int i = 0; i < count - 1; i++)
+            {
+                Vector3d first = list.ElementAt(i);
+
+                for (int j = i + 1; j < count; j++)
+                {
+                    Vector3d second = list.ElementAt(j);
+                    double distance = first.Distance(second);
+
+                    if (distance > maxDistance)
+                    {
+                        maxDistance = distance;
+                        a = first;
+                        b = second;
+                    }
+                }
+            }
+
+            return new Tuple<Vector3d, Vector3d>(a, b);
         }
     }
 }

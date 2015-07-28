@@ -1,21 +1,26 @@
-﻿using CodeFull.Extensions;
+﻿using CodeFull.Controls;
+using CodeFull.Extensions;
+using CodeFull.Graphics;
 using CodeFull.Graphics.Geometry;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 
-namespace CodeFull.Graphics
+namespace CodeFull.Graphics3D
 {
     /// <summary>
     /// Represents the axis-aligned bounding box of an object. This AABB
     /// rotates with the object but is axis-aligned in the object space.
     /// </summary>
-    public class AABB : Drawable
+    public class AABB : Drawable3D
     {
+        /// <summary>
+        /// Gets or sets the color of this AABB.
+        /// </summary>
+        public Color Color { get; set; }
+
         /// <summary>
         /// The minimum point of this OBB
         /// </summary>
@@ -32,6 +37,16 @@ namespace CodeFull.Graphics
         public Vector3d HalfPoints { get; set; }
 
         /// <summary>
+        /// Gets the length of the diagonal of this bounding box.
+        /// </summary>
+        public double Diagonal { get; protected set; }
+
+        /// <summary>
+        /// Gets the total volume of this bounding box.
+        /// </summary>
+        public double Volume { get; protected set; }
+
+        /// <summary>
         /// The vertices of this AABB. Winding order is clockwise
         /// starting from MinPoint to MinPoint, then move up, wind 
         /// clockwise again.
@@ -39,17 +54,34 @@ namespace CodeFull.Graphics
         protected IList<Vector3d> vertices = new List<Vector3d>();
 
         /// <summary>
+        /// Gets the list of vertices of this AABB. Winding order is clockwise
+        /// starting from MinPoint to MinPoint, then move up, wind 
+        /// clockwise again.
+        /// </summary>
+        public IList<Vector3d> Vertices
+        {
+            get
+            {
+                List<Vector3d> result = new List<Vector3d>();
+                result.AddRange(this.vertices);
+                return result;
+            }
+        }
+
+        /// <summary>
         /// Initializes a new AABB instance with the specified Drawable owner and
-        /// the minimum and maximum points.
+        /// the minimum and maximum points. The specified color will be used for drawing this AABB.
         /// </summary>
         /// <param name="owner">The owner of this AABB.</param>
         /// <param name="minPoint">The min point of this AABB.</param>
         /// <param name="maxPoint">The max point of this AABB.</param>
-        public AABB(Drawable owner, Vector3d minPoint, Vector3d maxPoint)
+        /// <param name="color">The drawing color of this AABB.</param>
+        public AABB(Drawable3D owner, Vector3d minPoint, Vector3d maxPoint, Color color)
         {
             this.Parent = owner;
             this.MinPoint = minPoint;
             this.MaxPoint = maxPoint;
+            this.Color = color;
             ComputeVertices();
             this.AABB = this;
             this.Transform = owner.Transform;
@@ -60,6 +92,16 @@ namespace CodeFull.Graphics
 
             ComputeVertices();
         }
+
+        /// <summary>
+        /// Initializes a new AABB instance with the specified Drawable owner and
+        /// the minimum and maximum points. The default gizmo color will be used for
+        /// drawing this AABB.
+        /// </summary>
+        /// <param name="owner">The owner of this AABB.</param>
+        /// <param name="minPoint">The min point of this AABB.</param>
+        /// <param name="maxPoint">The max point of this AABB.</param>
+        public AABB(Drawable3D owner, Vector3d minPoint, Vector3d maxPoint) : this(owner, minPoint, maxPoint, Gizmos.AABBColor) { }
 
         /// <summary>
         /// Computes the other vertices of this bounding box.
@@ -76,6 +118,14 @@ namespace CodeFull.Graphics
             vertices.Add(MaxPoint - new Vector3d(0, 0, 2 * HalfPoints.Z));
             vertices.Add(MaxPoint);
             vertices.Add(MaxPoint - new Vector3d(2 * HalfPoints.X, 0, 0));
+
+            // Recalculate the diagonal
+            this.Diagonal = (MaxPoint - MinPoint).Length;
+
+            // Recalculate the volume
+            this.Volume = (vertices[1] - MinPoint).Length *
+                (vertices[3] - MinPoint).Length *
+                (vertices[4] - MinPoint).Length;
         }
 
         protected override void CalculateCenter()
@@ -92,7 +142,7 @@ namespace CodeFull.Graphics
 
             GL.LineWidth(1);
 
-            GL.Color4(Color.Purple);
+            GL.Color4(this.Color);
 
             GL.Enable(EnableCap.LineSmooth);
             GL.Begin(PrimitiveType.LineStrip);
@@ -129,6 +179,11 @@ namespace CodeFull.Graphics
         /// <returns>The result of the hit test, or null if no hit occurs.</returns>
         public override HitTestResult HitTest(Ray ray)
         {
+            // If the volume of this bounding box is zero, we assert a hit
+            // Zero volume could happen for sketches.
+            if (Math.Abs(Volume) < float.Epsilon)
+                return new HitTestResult(this, Center);
+
             double tMin = int.MinValue;
             double tMax = int.MaxValue;
 

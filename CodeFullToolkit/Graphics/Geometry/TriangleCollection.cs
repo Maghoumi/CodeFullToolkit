@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CodeFull.Graphics
+namespace CodeFull.Geometry
 {
     /// <summary>
     /// Represents a collection of renderable triangles.

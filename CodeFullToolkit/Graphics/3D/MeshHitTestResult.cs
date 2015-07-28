@@ -1,11 +1,12 @@
-﻿using CodeFull.Graphics.Geometry;
+﻿using CodeFull.Graphics;
+using CodeFull.Graphics.Geometry;
 using OpenTK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace CodeFull.Graphics
+namespace CodeFull.Graphics3D
 {
     /// <summary>
     /// Represents a result of a hit test between a ray and a triangular mesh.
@@ -23,7 +24,7 @@ namespace CodeFull.Graphics
         /// <param name="drawable">The Drawable instance that was hit.</param>
         /// <param name="hitPoint">The hit point.</param>
         /// <param name="triangleHit">The triangle that was hit.</param>
-        public MeshHitTestResult(Drawable drawable, Vector3d hitPoint, Triangle triangleHit) : base(drawable, hitPoint)
+        public MeshHitTestResult(Drawable3D drawable, Vector3d hitPoint, Triangle triangleHit) : base(drawable, hitPoint)
         {
             this.TriangleHit = new Triangle(triangleHit.A, triangleHit.B, triangleHit.C);
         }

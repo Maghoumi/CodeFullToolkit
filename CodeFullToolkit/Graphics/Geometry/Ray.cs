@@ -1,4 +1,5 @@
 ﻿using CodeFull.Graphics.Transform;
+using CodeFull.Extensions;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
@@ -6,13 +7,15 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using CodeFull.Controls;
+using CodeFull.Graphics3D;
 
 namespace CodeFull.Graphics.Geometry
 {
     /// <summary>
     /// Represents a ray with origin an direction
     /// </summary>
-    public class Ray : Drawable
+    public class Ray : Drawable3D
     {
         /// <summary>
         /// Gets or sets the origin of this ray
@@ -77,12 +80,32 @@ namespace CodeFull.Graphics.Geometry
         }
 
         /// <summary>
+        /// Computes the distance between the specified point and this ray
+        /// (if this ray is treated as a line).
+        /// (Adapted from http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html)
+        /// </summary>
+        /// <param name="point">The point to calculate the distance to</param>
+        /// <returns>The SQUARED distance of the point to this ray.</returns>
+        public double SquaredDistance(Vector3d point)
+        {
+            var a = (Origin - point);
+            var x = a.Dot(EndPoint - Origin);
+            var dirSq = (EndPoint - Origin).LengthSquared;
+
+            double distanceSq = (a.LengthSquared * dirSq
+                 - (x * x)) / dirSq;
+
+            return distanceSq;
+
+        }
+
+        /// <summary>
         /// Constructs a new ray that is expressed in terms of the object's trasnfomrs.
         /// This method is usefull for ray casting.
         /// </summary>
         /// <param name="drawable">The object to use</param>
         /// <returns>A new ray inverted by the transform of the object.</returns>
-        public Ray ToObjectSpace(Drawable drawable)
+        public Ray ToObjectSpace(Drawable3D drawable)
         {
             return new Ray(Vector3d.Transform(this.Origin, drawable.Transform.Value.Inverted()), Vector3d.Transform(this.EndPoint, drawable.Transform.Value.Inverted()));
         }

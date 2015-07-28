@@ -124,7 +124,7 @@ namespace CodeFull.Graphics.Geometry
         /// </summary>
         /// <param name="ray">The ray to test for intersections</param>
         /// <returns>The point of intersection (if intersection occurs). null otherwise.</returns>
-        public Vector3d? IntersectsWith(Ray ray)
+        public Vector3d? IntersectionWith(Ray ray)
         {
             Vector3d P = Vector3d.Cross(ray.Direction, e2);
             double det = Vector3d.Dot(e1, P);

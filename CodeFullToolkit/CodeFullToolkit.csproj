@@ -32,6 +32,10 @@
     <DocumentationFile>bin\Release\CodeFullToolkit.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="MathNet.Numerics, Version=3.7.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\Dependencies\MathNet.Numerics.3.7.0\lib\net40\MathNet.Numerics.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="OpenTK">
       <HintPath>lib\OpenTK.dll</HintPath>
     </Reference>
@@ -41,6 +45,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -52,18 +57,24 @@
     <Compile Include="Controls\GLViewport3D.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="Controls\GLViewport3DEvents.cs" />
     <Compile Include="Extensions\Extensions.cs" />
     <Compile Include="Extensions\Helpers.cs" />
-    <Compile Include="Graphics\AABB.cs" />
-    <Compile Include="Graphics\Arcball.cs" />
+    <Compile Include="Graphics\3D\AABB.cs" />
+    <Compile Include="Graphics\3D\Arcball.cs" />
+    <Compile Include="Graphics\3D\Drawable.cs" />
+    <Compile Include="Graphics\3D\DrawableCollection.cs" />
+    <Compile Include="Graphics\3D\Mesh.cs" />
+    <Compile Include="Graphics\3D\MeshHitTestResult.cs" />
     <Compile Include="Graphics\Camera.cs" />
-    <Compile Include="Graphics\Drawable.cs" />
-    <Compile Include="Graphics\DrawableCollection.cs" />
+    <Compile Include="Graphics\Geometry\Line.cs" />
+    <Compile Include="Graphics\Geometry\LineSegment.cs" />
+    <Compile Include="Graphics\Geometry\Plane.cs" />
     <Compile Include="Graphics\Geometry\Ray.cs" />
     <Compile Include="Graphics\Geometry\Triangle.cs" />
+    <Compile Include="Graphics\Geometry\TriangleCollection.cs" />
+    <Compile Include="Graphics\Gizmos.cs" />
     <Compile Include="Graphics\HitTestResult.cs" />
-    <Compile Include="Graphics\Mesh.cs" />
-    <Compile Include="Graphics\MeshHitTestResult.cs" />
     <Compile Include="Graphics\Transform\EulerRotateTransform3D.cs" />
     <Compile Include="Graphics\Transform\MatrixTransform3D.cs" />
     <Compile Include="Graphics\Transform\QuaternionRotateTransform3D.cs" />
@@ -71,11 +82,12 @@
     <Compile Include="Graphics\Transform\Transform3D.cs" />
     <Compile Include="Graphics\Transform\Transform3DGroup.cs" />
     <Compile Include="Graphics\Transform\TranslateTransform3D.cs" />
-    <Compile Include="Graphics\TriangleCollection.cs" />
     <Compile Include="Graphics\VBO.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Controls\GLViewport3D.resx">
       <DependentUpon>GLViewport3D.cs</DependentUpon>

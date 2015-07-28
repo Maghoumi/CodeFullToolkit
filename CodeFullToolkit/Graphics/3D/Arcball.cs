@@ -1,4 +1,5 @@
-﻿using CodeFull.Graphics.Transform;
+﻿using CodeFull.Graphics;
+using CodeFull.Graphics.Transform;
 using OpenTK;
 using System;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 
-namespace CodeFull.Graphics
+namespace CodeFull.Graphics3D
 {
     /// <summary>
     /// Arcball is used to implement intuitive rotations using the mouse.
@@ -58,7 +59,7 @@ namespace CodeFull.Graphics
         /// <summary>
         /// The drawable that this arcball instance performs on
         /// </summary>
-        public Drawable Drawable { get; set; }
+        public Drawable3D Drawable { get; set; }
 
         /// <summary>
         /// Instantiates a new Arcball with the specified boundaries

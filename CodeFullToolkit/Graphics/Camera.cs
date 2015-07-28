@@ -70,10 +70,10 @@ namespace CodeFull.Graphics
 
         /// <summary>
         /// Creates a new Camera instance located on the origin of the world space, looking at (0, 0, 0) with
-        /// the unit Y axis specified as the up direction, with 45 degrees field of view and 0.1 and 64
+        /// the unit Y axis specified as the up direction, with 45 degrees field of view and 0.5 and 10
         /// specified as the near clipping and far clipping distances respectively.
         /// </summary>
-        public Camera() : this(Vector3d.Zero, Vector3d.Zero, Vector3d.UnitY, 45, 0.1, 64) { }
+        public Camera() : this(Vector3d.Zero, Vector3d.Zero, Vector3d.UnitY, 45, 0.5, 10) { }
 
         /// <summary>
         /// Creates the model view matrix based on the camera setup.

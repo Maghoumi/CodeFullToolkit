@@ -5,24 +5,24 @@ using System.Linq;
 using System.Text;
 using CodeFull.Graphics.Transform;
 
-namespace CodeFull.Graphics
+namespace CodeFull.Graphics3D
 {
     /// <summary>
     /// A collection of Drawable objects
     /// </summary>
-    public class DrawableCollection : ICollection<Drawable>, IList<Drawable>, IEnumerable<Drawable>
+    public class Drawable3DCollection : ICollection<Drawable3D>, IList<Drawable3D>, IEnumerable<Drawable3D>
     {
         /// <summary>
         /// The underlying collection of the drawables
         /// </summary>
-        protected IList<Drawable> collection = new List<Drawable>();
+        protected IList<Drawable3D> collection = new List<Drawable3D>();
 
         /// <summary>
         /// The owner of this collection
         /// </summary>
-        protected Drawable owner;
+        protected Drawable3D owner;
 
-        protected void ApplyTransform(Drawable item)
+        protected void ApplyTransform(Drawable3D item)
         {
             // TODO keep the objects transforms and append the parent's
             item.Transform = this.owner.Transform;
@@ -32,7 +32,7 @@ namespace CodeFull.Graphics
         /// Creates a new DrawableCollection instance using the specified drawable as the owner.
         /// </summary>
         /// <param name="owner">The ownder of this drawable.</param>
-        public DrawableCollection(Drawable owner)
+        public Drawable3DCollection(Drawable3D owner)
         {
             this.owner = owner;
         }
@@ -41,7 +41,7 @@ namespace CodeFull.Graphics
         /// Add a new Drawable to this collection.
         /// </summary>
         /// <param name="item">The Drawable instance to add.</param>
-        public void Add(Drawable item)
+        public void Add(Drawable3D item)
         {
             this.collection.Add(item);
             item.Parent = owner;
@@ -65,7 +65,7 @@ namespace CodeFull.Graphics
         /// </summary>
         /// <param name="item">The Drawable instance to look for.</param>
         /// <returns>true if the collection contains the specified Drawable. false otherwise.</returns>
-        public bool Contains(Drawable item)
+        public bool Contains(Drawable3D item)
         {
             return this.collection.Contains(item);
         }
@@ -74,7 +74,7 @@ namespace CodeFull.Graphics
         /// </summary>
         /// <param name="array"></param>
         /// <param name="arrayIndex"></param>
-        public void CopyTo(Drawable[] array, int arrayIndex)
+        public void CopyTo(Drawable3D[] array, int arrayIndex)
         {
             this.collection.CopyTo(array, arrayIndex);
         }
@@ -100,7 +100,7 @@ namespace CodeFull.Graphics
         /// </summary>
         /// <param name="item">The Drawable to remove.</param>
         /// <returns>true if the specified Drawable existed and was removed. false otherwise.</returns>
-        public bool Remove(Drawable item)
+        public bool Remove(Drawable3D item)
         {
             item.Parent = null;
             return this.collection.Remove(item);
@@ -110,7 +110,7 @@ namespace CodeFull.Graphics
         /// Gets the enumerator of this collection.
         /// </summary>
         /// <returns>This collections enumerator.</returns>
-        public IEnumerator<Drawable> GetEnumerator()
+        public IEnumerator<Drawable3D> GetEnumerator()
         {
             return this.collection.GetEnumerator();
         }
@@ -125,7 +125,7 @@ namespace CodeFull.Graphics
         /// </summary>
         /// <param name="item">The Drawable.</param>
         /// <returns>The index of the Drawable if it exists in this collection. -1 otherwise.</returns>
-        public int IndexOf(Drawable item)
+        public int IndexOf(Drawable3D item)
         {
             return this.collection.IndexOf(item);
         }
@@ -135,7 +135,7 @@ namespace CodeFull.Graphics
         /// </summary>
         /// <param name="index">The place to insert the Drawable.</param>
         /// <param name="item">The Drawable to insert.</param>
-        public void Insert(int index, Drawable item)
+        public void Insert(int index, Drawable3D item)
         {
             this.collection.Insert(index, item);
             item.Parent = this.owner;
@@ -162,7 +162,7 @@ namespace CodeFull.Graphics
         /// </summary>
         /// <param name="index">The access index.</param>
         /// <returns>The Drawable at the specified index.</returns>
-        public Drawable this[int index]
+        public Drawable3D this[int index]
         {
             get
             {

@@ -2,15 +2,16 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using OpenTK.Graphics.OpenGL;
 using CodeFull.Graphics;
 using System.Windows.Forms;
 using System.ComponentModel;
 using CodeFull.Graphics.Geometry;
-using System.Diagnostics;
 using CodeFull.Extensions;
+using System.Runtime.InteropServices;
+using System.Security.Permissions;
+using System.Diagnostics;
+using CodeFull.Graphics3D;
 
 namespace CodeFull.Controls
 {
@@ -21,10 +22,25 @@ namespace CodeFull.Controls
     public class GLViewport3D : GLControl
     {
         /// <summary>
+        /// Underlying storage for the FPS property.
+        /// </summary>
+        protected int fps;
+
+        /// <summary>
+        /// Underlying storage for the SelectedDrawable property.
+        /// </summary>
+        protected Drawable3D selectedDrawable;
+
+        /// <summary>
         /// The arcball instance that controls the transformations of the drawables
         /// inside this viewport
         /// </summary>
         protected Arcball arcball;
+
+        /// <summary>
+        /// The timer that controls the drawing commands
+        /// </summary>
+        protected Timer drawCallTimer = new Timer();
 
         /// <summary>
         /// The viewport's camera
@@ -35,7 +51,7 @@ namespace CodeFull.Controls
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Camera Camera { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the arcball sensitivity for manipulating drawables in this viewport
         /// </summary>
@@ -62,29 +78,113 @@ namespace CodeFull.Controls
         /// The objects that this viewport will display
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public IList<Drawable> Children { get; set; }
+        public IList<Drawable3D> Children { get; set; }
 
         /// <summary>
         /// The currently selected drawable of this viewport. This drawable will be manipulated
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public Drawable SelectedDrawable { get; set; }
+        public Drawable3D SelectedDrawable
+        {
+            get { return selectedDrawable; }
+            set
+            {
+                selectedDrawable = value;
+                arcball.Drawable = value;
+
+                // Raise the SelectedDrawableChanged event if there is a handler set.
+                if (this.SelectedDrawableChanged != null)
+                    this.SelectedDrawableChanged(this, new SelectedDrawableChangedEventArgs(value));
+            }
+        }
 
         /// <summary>
-        /// Event raised when the selected drawable item has changed
+        /// Gets or sets the maximum framerate of the OpenGL renderer
         /// </summary>
-        public event EventHandler SelectionChanged;
+        public int FPS
+        {
+            get { return fps; }
+            set { fps = value; SetupRenderTimer(); }
+        }
+
+        #region Event Declarations
+
+        /// <summary>
+        /// Event raised when the selected drawble of this viewport has changed.
+        /// </summary>
+        public event SelectedDrawableChangedEventHandler SelectedDrawableChanged;
+
+        /// <summary>
+        /// Event raised when stylus down occurs
+        /// </summary>
+        public event StylusEventHandler StylusDown;
+
+        /// <summary>
+        /// Event raised when stylus up occurs
+        /// </summary>
+        public event StylusEventHandler StylusUp;
+
+        /// <summary>
+        /// Event raised when stylus move occurs
+        /// </summary>
+        public event StylusEventHandler StylusMove;
+
+        /// <summary>
+        /// Event raised when stylus click occurs
+        /// </summary>
+        public event StylusEventHandler StylusClick;
+
+        /// <summary>
+        /// Event raised when stylus double click occurs
+        /// </summary>
+        public event StylusEventHandler StylusDoubleClick;
+
+        /// <summary>
+        /// Event raised when Touch down occurs
+        /// </summary>
+        public event TouchEventHandler TouchDown;
+
+        /// <summary>
+        /// Event raised when Touch up occurs
+        /// </summary>
+        public event TouchEventHandler TouchUp;
+
+        /// <summary>
+        /// Event raised when Touch move occurs
+        /// </summary>
+        public event TouchEventHandler TouchMove;
+
+        /// <summary>
+        /// Event raised when Touch click occurs
+        /// </summary>
+        public event TouchEventHandler TouchClick;
+
+        /// <summary>
+        /// Event raised when Touch double click occurs
+        /// </summary>
+        public event TouchEventHandler TouchDoubleClick;
+
+        #endregion
 
         public GLViewport3D()
-            : base(new OpenTK.Graphics.GraphicsMode(OpenTK.Graphics.GraphicsMode.Default.ColorFormat, OpenTK.Graphics.GraphicsMode.Default.Depth, OpenTK.Graphics.GraphicsMode.Default.Stencil, 8))
+            : base(new OpenTK.Graphics.GraphicsMode(OpenTK.Graphics.GraphicsMode.Default.ColorFormat, 24, OpenTK.Graphics.GraphicsMode.Default.Stencil, 8))
         {
             InitializeComponent();
 
             arcball = new Arcball(Width, Height, 0.01);
             this.ClearColor = Color.White;
-            this.Camera = new Camera() { Position = new Vector3d(0, 0, 5)};
-            this.Children = new List<Drawable>();
-            Application.Idle += Application_Idle;
+            this.Camera = new Camera() { Position = new Vector3d(0, 0, 5) };
+            this.Children = new List<Drawable3D>();
+            this.FPS = 80;
+
+            // Setup draw timer.
+            SetupRenderTimer();
+
+            // Setup event handlers
+            this.MouseDown += GLViewport3D_MouseDown;
+            this.MouseUp += GLViewport3D_MouseUp;
+            this.Paint += GLViewport3D_Paint;
+            this.Load += GLViewport3D_Load;
         }
 
         private void InitializeComponent()
@@ -99,10 +199,15 @@ namespace CodeFull.Controls
             this.ResumeLayout(false);
         }
 
-        protected override void OnLoad(EventArgs e)
+        /// <summary>
+        /// Sets up the timer that places the render calls to the renderer.
+        /// </summary>
+        protected void SetupRenderTimer()
         {
-            base.OnLoad(e);
-            this.GLViewport3D_Resize(this, EventArgs.Empty);
+            drawCallTimer.Stop();
+            drawCallTimer.Interval = (int)((1.0 / FPS) * 1000);
+            drawCallTimer.Tick += drawCallTimer_Tick;
+            drawCallTimer.Start();
         }
 
         /// <summary>
@@ -122,6 +227,38 @@ namespace CodeFull.Controls
         {
             if (DesignMode)
                 return;
+
+            /*
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            GL.Viewport(ClientRectangle);
+
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadIdentity();
+            GL.Ortho(-1.0, 1.0, -1.0, 1.0, 0.0, 4.0);
+            
+
+            GL.MatrixMode(MatrixMode.Modelview);
+            GL.LoadIdentity();
+
+            GL.Color3(Color.Red);
+            GL.PointSize(10);
+
+            GL.Begin(BeginMode.Points);
+            GL.Vertex3(new Vector3d(0, 0, 0));
+            GL.End();
+
+            GL.Begin(BeginMode.LineStrip);
+            GL.Vertex3(new Vector3d(0, 0, 0));
+            GL.Vertex3(new Vector3d(0, 1, 0));
+            GL.Vertex3(new Vector3d(1, 0, 0));
+            GL.End();
+
+            SwapBuffers();
+            return;
+             */
+
+
 
             // Apply arcball transforms to the selected drawable
             var cursor = OpenTK.Input.Mouse.GetCursorState();
@@ -147,8 +284,6 @@ namespace CodeFull.Controls
             GL.MatrixMode(MatrixMode.Modelview);
             GL.LoadMatrix(ref modelView);
 
-
-
             foreach (var child in Children)
                 child.Draw();
 
@@ -166,26 +301,48 @@ namespace CodeFull.Controls
             SwapBuffers();
         }
 
-        #region Even Handling
+        //------------------------------------------------------
+        //
+        //  Event Handlers
+        //
+        //------------------------------------------------------
+        #region Even Handlers
 
-        protected override void OnPaint(PaintEventArgs e)
+        /// <summary>
+        /// Load event handler
+        /// </summary>
+        /// <param name="sender">The sender</param>
+        /// <param name="e">The parameters</param>
+        private void GLViewport3D_Load(object sender, EventArgs e)
         {
-            base.OnPaint(e);
+            this.GLViewport3D_Resize(this, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// Draw timer event handler
+        /// </summary>
+        /// <param name="sender">The sender</param>
+        /// <param name="e">The parameters</param>
+        private void drawCallTimer_Tick(object sender, EventArgs e)
+        {
+            this.Invalidate();
+        }
+
+        /// <summary>
+        /// Paint event handler
+        /// </summary>
+        /// <param name="sender">The sender</param>
+        /// <param name="e">The parameters</param>
+        private void GLViewport3D_Paint(object sender, PaintEventArgs e)
+        {
             Render();
         }
-        protected override void OnHandleDestroyed(EventArgs e)
-        {
-            base.OnHandleDestroyed(e);
-            Application.Idle -= Application_Idle;
-        }
 
-        void Application_Idle(object sender, EventArgs e)
-        {
-            // Continuously render if application is idle
-            while (this.IsIdle)
-                Render();
-        }
-
+        /// <summary>
+        /// Resize event handler
+        /// </summary>
+        /// <param name="sender">The sender</param>
+        /// <param name="e">The parameters</param>
         private void GLViewport3D_Resize(object sender, EventArgs e)
         {
             OpenTK.GLControl c = sender as OpenTK.GLControl;
@@ -200,35 +357,274 @@ namespace CodeFull.Controls
             arcball.SetBounds(Width, Height);
         }
 
+        /// <summary>
+        /// MouseDown event handler
+        /// </summary>
+        /// <param name="sender">The sender</param>
+        /// <param name="e">The parameters</param>
+        protected virtual void GLViewport3D_MouseDown(object sender, MouseEventArgs e)
+        {
+            // Perform picking using any mouse button
+            Pick(e.Location);
+            // Change arcball's mouse button status
+            arcball.OnMouseDown(e);
+        }
+
+        /// <summary>
+        /// MouseUp event handler
+        /// </summary>
+        /// <param name="sender">The sender</param>
+        /// <param name="e">The parameters</param>
+        protected virtual void GLViewport3D_MouseUp(object sender, MouseEventArgs e)
+        {
+            // Change arcball's mouse button status
+            arcball.OnMouseUp(e);
+        }
+
+        /// <summary>
+        /// Command key handler
+        /// </summary>
+        /// <param name="msg"></param>
+        /// <param name="keyData"></param>
+        /// <returns></returns>
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
-            //if (SelectedDrawable == null)
-            //    return base.ProcessCmdKey(ref msg, keyData);
+            if (SelectedDrawable == null)
+                return base.ProcessCmdKey(ref msg, keyData);
 
             HandleKeyboard(keyData);
 
             return base.ProcessCmdKey(ref msg, keyData);
         }
 
+        #endregion
+
+        //------------------------------------------------------
+        //
+        //  Event Raisers -- Raise various events
+        //
+        //------------------------------------------------------
+        #region Event Raisers
+
+        /// <summary>
+        /// Raises the MouseDown event
+        /// </summary>
+        /// <param name="e">The event argument</param>
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            base.OnMouseDown(e);
+            var source = Helpers.GetMouseEventSource();
 
-            // Perform picking using any mouse button
-            Pick(e.Location);
+            switch (source)
+            {
+                case MouseEventSource.Mouse:
+                    base.OnMouseDown(e);
+                    break;
 
-            // Change arcball's mouse button status
-            arcball.OnMouseDown(e);
+                case MouseEventSource.Stylus:
+                    this.OnStylusDown(e);
+                    break;
+
+                case MouseEventSource.Touch:
+                    this.OnTouchDown(e);
+                    break;
+            }
         }
 
+        /// <summary>
+        /// Raises the MouseUp event
+        /// </summary>
+        /// <param name="e">The event argument</param>
         protected override void OnMouseUp(MouseEventArgs e)
         {
-            base.OnMouseUp(e);
+            var source = Helpers.GetMouseEventSource();
 
-            // Change arcball's mouse button status
-            arcball.OnMouseUp(e);
+            switch (source)
+            {
+                case MouseEventSource.Mouse:
+                    base.OnMouseUp(e);
+                    break;
+
+                case MouseEventSource.Stylus:
+                    this.OnStylusUp(e);
+                    break;
+
+                case MouseEventSource.Touch:
+                    this.OnTouchUp(e);
+                    break;
+            }
         }
 
+        /// <summary>
+        /// Raises the MouseMove event
+        /// </summary>
+        /// <param name="e">The event argument</param>
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            var source = Helpers.GetMouseEventSource();
+
+            switch (source)
+            {
+                case MouseEventSource.Mouse:
+                    base.OnMouseMove(e);
+                    break;
+
+                case MouseEventSource.Stylus:
+                    this.OnStylusMove(e);
+                    break;
+
+                case MouseEventSource.Touch:
+                    this.OnTouchMove(e);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Raises the MouseClick event
+        /// </summary>
+        /// <param name="e">The event argument</param>
+        protected override void OnMouseClick(MouseEventArgs e)
+        {
+            var source = Helpers.GetMouseEventSource();
+
+            switch (source)
+            {
+                case MouseEventSource.Mouse:
+                    base.OnMouseClick(e);
+                    break;
+
+                case MouseEventSource.Stylus:
+                    this.OnStylusClick(e);
+                    break;
+
+                case MouseEventSource.Touch:
+                    this.OnTouchClick(e);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Raises the MouseDoubleClick event
+        /// </summary>
+        /// <param name="e">The event argument</param>
+        protected override void OnMouseDoubleClick(MouseEventArgs e)
+        {
+            var source = Helpers.GetMouseEventSource();
+
+            switch (source)
+            {
+                case MouseEventSource.Mouse:
+                    base.OnMouseDoubleClick(e);
+                    break;
+
+                case MouseEventSource.Stylus:
+                    this.OnStylusDoubleClick(e);
+                    break;
+
+                case MouseEventSource.Touch:
+                    this.OnTouchDoubleClick(e);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Raises the StylusDown event
+        /// </summary>
+        /// <param name="e">The event argument</param>
+        protected virtual void OnStylusDown(MouseEventArgs e)
+        {
+            if (this.StylusDown != null)
+                this.StylusDown(this, e);
+        }
+
+        /// <summary>
+        /// Raises the StylusUp event
+        /// </summary>
+        /// <param name="e">The event argument</param>
+        protected virtual void OnStylusUp(MouseEventArgs e)
+        {
+            if (this.StylusUp != null)
+                this.StylusUp(this, e);
+        }
+
+        /// <summary>
+        /// Raises the StylusMove event
+        /// </summary>
+        /// <param name="e">The event argument</param>
+        protected virtual void OnStylusMove(MouseEventArgs e)
+        {
+            if (this.StylusMove != null)
+                this.StylusMove(this, e);
+        }
+
+        /// <summary>
+        /// Raises the StylusClick event
+        /// </summary>
+        /// <param name="e">The event argument</param>
+        protected virtual void OnStylusClick(MouseEventArgs e)
+        {
+            if (this.StylusClick != null)
+                this.StylusClick(this, e);
+        }
+
+        /// <summary>
+        /// Raises the StylusDoubleClick event
+        /// </summary>
+        /// <param name="e">The event argument</param>
+        protected virtual void OnStylusDoubleClick(MouseEventArgs e)
+        {
+            if (this.StylusDoubleClick != null)
+                this.StylusDoubleClick(this, e);
+        }
+
+        /// <summary>
+        /// Raises the TouchDown event
+        /// </summary>
+        /// <param name="e">The event argument</param>
+        protected virtual void OnTouchDown(MouseEventArgs e)
+        {
+            if (this.TouchDown != null)
+                this.TouchDown(this, e);
+        }
+
+        /// <summary>
+        /// Raises the TouchUp event
+        /// </summary>
+        /// <param name="e">The event argument</param>
+        protected virtual void OnTouchUp(MouseEventArgs e)
+        {
+            if (this.TouchUp != null)
+                this.TouchUp(this, e);
+        }
+
+        /// <summary>
+        /// Raises the TouchMove event
+        /// </summary>
+        /// <param name="e">The event argument</param>
+        protected virtual void OnTouchMove(MouseEventArgs e)
+        {
+            if (this.TouchMove != null)
+                this.TouchMove(this, e);
+        }
+
+        /// <summary>
+        /// Raises the TouchClick event
+        /// </summary>
+        /// <param name="e">The event argument</param>
+        protected virtual void OnTouchClick(MouseEventArgs e)
+        {
+            if (this.TouchClick != null)
+                this.TouchClick(this, e);
+        }
+
+        /// <summary>
+        /// Raises the TouchDoubleClick event
+        /// </summary>
+        /// <param name="e">The event argument</param>
+        protected virtual void OnTouchDoubleClick(MouseEventArgs e)
+        {
+            if (this.TouchDoubleClick != null)
+                this.TouchDoubleClick(this, e);
+        }
         #endregion
 
         //------------------------------------------------------
@@ -236,7 +632,6 @@ namespace CodeFull.Controls
         //  Event Helpers
         //
         //------------------------------------------------------
-
         #region Event Helpers
 
         /// <summary>
@@ -309,8 +704,6 @@ namespace CodeFull.Controls
             if (Helpers.GetDepth(mouseLocation) == 1)
                 return;
 
-            Ray ray = Helpers.ScreenPointToRay(mouseLocation);
-
             double minDepth = int.MaxValue;
 
             foreach (var drawable in this.Children)
@@ -319,7 +712,7 @@ namespace CodeFull.Controls
 
                 if (m != null)
                 {
-                    var res = m.HitTest(ray.ToObjectSpace(drawable));
+                    var res = m.HitTest(mouseLocation);
                     if (res == null)
                         continue;
 
@@ -328,14 +721,14 @@ namespace CodeFull.Controls
                     if (dist < minDepth)
                     {
                         minDepth = dist;
-                        arcball.Drawable = SelectedDrawable = res.Drawable;
+                        SelectedDrawable = res.Drawable;
                     }
                 }
             }
 
-            if (minDepth != int.MaxValue && null != this.SelectionChanged)
+            if (minDepth != int.MaxValue && null != this.SelectedDrawableChanged)
             {
-                this.SelectionChanged(this, EventArgs.Empty);
+                this.SelectedDrawableChanged(this, new SelectedDrawableChangedEventArgs(SelectedDrawable));
             }
 
             return;

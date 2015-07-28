@@ -3,23 +3,23 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using OpenTK.Graphics.OpenGL;
 using System.IO;
 using System.Threading.Tasks;
 using CodeFull.Graphics.Geometry;
-using System.Diagnostics;
 using CodeFull.Extensions;
+using CodeFull.Controls;
+using CodeFull.Graphics;
+using CodeFull.Geometry;
 
-namespace CodeFull.Graphics
+namespace CodeFull.Graphics3D
 {
     /// <summary>
     /// Represents a mesh built using vertices and triangle indices that can be
     /// rendered in OpenGL, manipulated in C# and be the subject of CSG operations
     /// in Carve
     /// </summary>
-    public class Mesh : Drawable
+    public class Mesh : Drawable3D
     {
         /// <summary>
         /// Internal ID counter for meshes
@@ -156,7 +156,7 @@ namespace CodeFull.Graphics
             Init();
             CalculateCenter();
 
-            this.Attachments = new DrawableCollection(this);
+            this.Attachments = new Drawable3DCollection(this);
             ComputeAABB();
             
             Mesh.idGen++;
@@ -266,7 +266,7 @@ namespace CodeFull.Graphics
             foreach (var attachment in this.Attachments)
                 attachment.Draw();
 
-            if (ShowAABB) 
+            if (ShowAABB || Gizmos.ShowAABB) 
                 this.AABB.Draw();
         }
 
@@ -287,7 +287,7 @@ namespace CodeFull.Graphics
 
             Parallel.ForEach(Triangles, item =>
             {
-                Vector3d? intersection = item.IntersectsWith(ray);
+                Vector3d? intersection = item.IntersectionWith(ray);
 
                 if (intersection != null)
                 {

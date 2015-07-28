@@ -1,5 +1,9 @@
-﻿using CodeFull.Graphics.Geometry;
+﻿using CodeFull.Controls;
+using CodeFull.Extensions;
+using CodeFull.Graphics;
+using CodeFull.Graphics.Geometry;
 using CodeFull.Graphics.Transform;
+using CodeFull.Graphics3D;
 using OpenTK;
 using System;
 using System.Collections.Generic;
@@ -7,17 +11,17 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 
-namespace CodeFull.Graphics
+namespace CodeFull.Graphics3D
 {
     /// <summary>
     /// Defines the interface for objects that can be drawn using OpenGL
     /// </summary>
-    public abstract class Drawable
+    public abstract class Drawable3D
     {
         /// <summary>
         /// Gets or sets the list of drawables attached to this CodeFull.Graphics.Drawable instance
         /// </summary>
-        public DrawableCollection Attachments { get; set; }
+        public Drawable3DCollection Attachments { get; set; }
 
         /// <summary>
         /// Internally stores the centroid of this drawable
@@ -61,7 +65,7 @@ namespace CodeFull.Graphics
         /// <summary>
         /// The parent of this Drawable
         /// </summary>
-        public Drawable Parent { get; set; }
+        public Drawable3D Parent { get; set; }
 
         /// <summary>
         /// Gets the axis-aligned bounding box of this Drawable.
@@ -87,7 +91,19 @@ namespace CodeFull.Graphics
         /// Performs a ray casting hit test using the specified ray. 
         /// </summary>
         /// <param name="ray">The ray to perform hit test for</param>
-        /// <returns>The result of the hit test (if any hit occurred). null otherwise.</returns>
+        /// <returns>The result of the hit test (if any hit occurred), null otherwise.</returns>
         public abstract HitTestResult HitTest(Ray ray);
+
+        /// <summary>
+        /// Performs a ray casting hit test using the specified point on the screen.
+        /// By default, the screen point will be converted to a ray and the raycasting will be performed.
+        /// Note that the ray will be transformed to the object's space.
+        /// </summary>
+        /// <param name="screenPoint">The screen point to perform hit test for</param>
+        /// <returns>The result of the hit test (if any hit occurred), null otherwise.</returns>
+        public virtual HitTestResult HitTest(Point screenPoint)
+        {
+            return HitTest(Helpers.ScreenPointToRay(screenPoint).ToObjectSpace(this));
+        }
     }
 }

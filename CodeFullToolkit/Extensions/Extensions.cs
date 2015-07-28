@@ -50,6 +50,28 @@ namespace CodeFull.Extensions
         }
 
         /// <summary>
+        /// Computes the squared Euclidean distance between this vector and another vector
+        /// </summary>
+        /// <param name="a">This vector</param>
+        /// <param name="b">The other vector</param>
+        /// <returns>The squared Euclidean distance between the two vectors.</returns>
+        public static double DistanceSquared(this Vector3d a, Vector3d b)
+        {
+            return (b - a).LengthSquared;
+        }
+
+        /// <summary>
+        /// Computes the Euclidean distance between this vector and another vector
+        /// </summary>
+        /// <param name="a">This vector</param>
+        /// <param name="b">The other vector</param>
+        /// <returns>The Euclidean distance between the two vectors.</returns>
+        public static double Distance(this Vector2d a, Vector2d b)
+        {
+            return (b - a).Length;
+        }
+
+        /// <summary>
         /// Computes the cross product of the current vector with another vector.
         /// </summary>
         /// <param name="a">The current vector</param>
@@ -61,6 +83,17 @@ namespace CodeFull.Extensions
         }
 
         /// <summary>
+        /// Computes the cross product of the current vector with another vector.
+        /// </summary>
+        /// <param name="a">The current vector</param>
+        /// <param name="b">The other vector</param>
+        /// <returns>The result of the cross product</returns>
+        public static double Cross(this Vector2d a, Vector2d b)
+        {
+            return a.X * b.Y - a.Y * b.X;
+        }
+
+        /// <summary>
         /// Computes the dot product of the current vector with another vector.
         /// </summary>
         /// <param name="a">The current vector</param>
@@ -69,6 +102,21 @@ namespace CodeFull.Extensions
         public static double Dot(this Vector3d a, Vector3d b)
         {
             return Vector3d.Dot(a, b);
+        }
+
+        /// <summary>
+        /// Calculates the angle between the current vector and the other vector (in radians).
+        /// This does not have the NaN issue of the OpenTK release (as mentioned in :
+        /// http://www.opentk.com/node/2585)
+        /// </summary>
+        /// <param name="a">This vector.</param>
+        /// <param name="other">The other vector.</param>
+        /// <returns>The angle between the currect vector and the other one.</returns>
+        public static double CalculateAngle(this Vector3d a, Vector3d other)
+        {
+            double temp;
+            Vector3d.Dot(ref a, ref other, out temp);
+            return System.Math.Acos(MathHelper.Clamp(temp / (a.Length * other.Length), -1.0, 1.0));
         }
     }
 }

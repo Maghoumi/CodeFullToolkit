@@ -141,11 +141,13 @@ publish/
 # NuGet Packages
 *.nupkg
 # The packages folder can be ignored because of Package Restore
-**/packages/*
+**/Dependencies/*
 # except build/, which is used as an MSBuild target.
-!**/packages/build/
+!**/Dependencies/build/
+# also except for CarveSharp (which is not available as NuGet package)
+!**/Dependencies/CarveSharp/
 # Uncomment if necessary however generally it will be regenerated when needed
-#!**/packages/repositories.config
+#!**/Dependencies/repositories.config
 
 # Windows Azure Build Output
 csx/
